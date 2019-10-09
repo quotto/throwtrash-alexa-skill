@@ -10,13 +10,14 @@ jobs:
       - run:
           name: install
           command: npm install
-          working_directory: ~/src
+          working_directory: src
       - run:
           name: test
           command: npm test
+          working_directory: src
       - deploy: 
           command: | 
             aws cloudformation package --s3-bucket my-lambda-function-deployment --template-file template.yml --output-template-file packaged-template.yml
             aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID={{ .Environment.<APPID> }}
-          working_directory: ~/deploy
+          working_directory: deploy
 
