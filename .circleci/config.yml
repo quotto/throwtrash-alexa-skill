@@ -3,7 +3,7 @@ orbs:
   aws-cli: circleci/aws-cli@0.1.16
 
 jobs:
-  build:
+  setup:
     executor: aws-cli/default
     steps:
       - checkout
@@ -15,9 +15,21 @@ jobs:
           name: test
           command: npm test
           working_directory: src
+  deploy:
+    docker:
+      -image: circleci/node:8.9
+    steps:
       - deploy: 
           command: | 
             aws cloudformation package --s3-bucket my-lambda-function-deployment --template-file template.yml --output-template-file packaged-template.yml
             aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID={{ .Environment.<APPID> }}
           working_directory: deploy
+
+workflows:
+  all_build:
+    jobs:
+      - setup
+      - deploy
+        requires:
+          - setup
 
