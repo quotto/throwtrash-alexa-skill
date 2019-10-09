@@ -29,7 +29,9 @@ workflows:
   all_build:
     jobs:
       - setup
+          context: aws-test
       - deploy:
+          context: aws-deploy
           requires:
             - setup
 
