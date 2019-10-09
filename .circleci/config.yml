@@ -29,7 +29,7 @@ workflows:
   all_build:
     jobs:
       - setup
-      - deploy
+      - deploy:
           requires:
             - setup
 
