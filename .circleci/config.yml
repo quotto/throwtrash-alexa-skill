@@ -4,7 +4,8 @@ orbs:
 
 jobs:
   setup:
-    executor: aws-cli/default
+    docker:
+      - image: circleci/node:8.9
     steps:
       - checkout
       - run:
@@ -16,8 +17,7 @@ jobs:
           command: npm test
           working_directory: src
   deploy:
-    docker:
-      - image: circleci/node:8.9
+    executor: aws-cli/default
     steps:
       - deploy: 
           command: | 
