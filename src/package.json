@@ -1,0 +1,29 @@
+{
+  "name": "trahes_client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test",
+    "deploy": "python ../deploy/deploy.py"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ask-sdk": "^2.7.0",
+    "dateformat": "^3.0.3",
+    "lodash": "^4.17.15",
+    "moment-timezone": "^0.5.26",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4"
+  },
+  "devDependencies": {
+    "ask-cli": "^1.7.15",
+    "aws-lambda-local-deployer": "^1.0.6",
+    "eslint": "^6.5.1",
+    "lint": "^1.1.2",
+    "mocha": "^6.2.1",
+    "rewire": "^4.0.1",
+    "sinon": "^7.5.0"
+  }
+}

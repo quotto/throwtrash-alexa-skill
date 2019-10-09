@@ -1,0 +1,24 @@
+{
+    "listItemIdentifier": "",
+    "textContent": {
+        "primaryText": {
+            "type": "PlainText",
+            "text": ""
+        },
+        "secondaryText": {
+            "type": "PlainText",
+            "text": ""
+        },
+        "tertiaryText": {
+            "type": "PlainText",
+            "text": ""
+        }
+    },
+    "image": {
+        "contentDescription": null,
+        "smallSourceUrl": null,
+        "largeSourceUrl": null,
+        "sources": []
+    },
+    "token": ""
+}

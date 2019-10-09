@@ -1,0 +1,40 @@
+{
+    "weekday":{
+        "0":"Sunday",
+        "1":"Monday",
+        "2":"Tuseday",
+        "3":"Wednseday",
+        "4":"Thursday",
+        "5":"Friday",
+        "6":"Saturday"
+    },
+    "pointday": {
+        "0":"today",
+        "1":"tommorrow",
+        "2":"day after tommorrow",
+        "3":"Sunday",
+        "4":"Monday",
+        "5":"Tuseday",
+        "6":"Wednseday",
+        "7":"Thursday",
+        "8":"friday",
+        "9":"Saturday"
+    },
+    "schedule":{
+        "weekday": "every %s",
+        "biweek": "%s1 %s2",
+        "month":"%s of every month",
+        "evweek":"every other %s"
+    },
+    "trashname": {
+        "burn" : "burnable trash",
+        "unburn": "unburnable trash",
+        "bin":"bottle",
+        "can": "can",
+        "plastic": "plastic",
+        "petbottle": "plastic bottle",
+        "paper": "paper",
+        "resource": "recyclble trash",
+        "coarse": "oversized trash"
+    }
+}

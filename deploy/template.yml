@@ -1,0 +1,24 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: The AWS CloudFormation template for BSE Workflow
+Parameters:
+  APPID:
+    Type: 'String'
+Resources:
+  ThrowTrashSkill:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code: ../src
+      FunctionName: ThrowTrashSkill
+      Handler: index.handler
+      Role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lambda_basic_execution'
+      Runtime: nodejs8.10
+      Timeout: 30
+    DeletionPolicy: Retain
+  LambdaEvent:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref ThrowTrashSkill
+      Principal: 'alexa-appkit.amazon.com'
+      EventSourceToken: !Ref APPID

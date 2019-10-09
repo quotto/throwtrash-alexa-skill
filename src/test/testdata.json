@@ -1,0 +1,386 @@
+{
+    "all": [
+        {
+            "type": "burn",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2018-09-09"
+                    }
+                },
+                {
+                    "type": "month",
+                    "value": "10"
+                }
+            ]
+        },
+        {
+            "type": "other",
+            "trash_val": "新運",
+            "schedules": [
+                {
+                    "type": "weekday",
+                    "value": "0"
+                },
+                {
+                    "type": "biweek",
+                    "value": "5-2"
+                }
+            ]
+        },
+        {
+            "type": "plastic",
+            "schedules": [
+                {
+                    "type": "weekday",
+                    "value": "0"
+                }
+            ]
+        },
+        {
+            "type": "can",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2018-09-30"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paper",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2018-09-16"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "bin",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2018-08-26"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "petbottle",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2018-08-26"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "coarse",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2018-08-26"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "unburn",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2018-08-26"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "resource",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2018-08-26"
+                    }
+                }
+            ]
+        }
+    ],
+    "checkEnableTrashes": [ 
+        {
+            "type": "burn",
+            "trash_val": "", 
+            "schedules": [
+                {
+                    "type": "weekday",
+                    "value": "3" 
+                }, 
+                { "type": "weekday", "value": "6" }, 
+                { "type": "none", "value": "" } 
+            ]
+        }, 
+        { 
+            "type": "plastic", 
+            "trash_val": "",
+            "schedules": [ 
+                { "type": "weekday", "value": "1" }, 
+                { "type": "none", "value": "" }, 
+                { "type": "none", "value": "" } 
+            ] 
+        }, 
+        {
+            "type": "paper",
+            "trash_val": "", 
+            "schedules": [ 
+                { "type": "none", "value": "" }, 
+                { "type": "biweek", "value": "1-2" }, 
+                { "type": "none", "value": "" } 
+            ]
+        }, 
+        {
+            "type": "bottole",
+            "trash_val": "",
+            "schedules": [ 
+                { "type": "weekday", "value": "4" }, 
+                { "type": "none", "value": "" }, 
+                { "type": "none", "value": "" } 
+            ] 
+        }, 
+        { 
+            "type": "petbottle", 
+            "trash_val": "",
+            "schedules": [ 
+                { "type": "weekday", "value": "4" }, 
+                { "type": "month", "value": "11" }, 
+                { "type": "none", "value": "" } 
+            ] 
+        } 
+    ],
+    "evweek": [
+        {
+            "type": "burn",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2018-09-09"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "other",
+            "trash_val": "新運",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "1",
+                        "start": "2018-09-09"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "plastic",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2018-09-23"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "can",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2018-09-30"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "paper",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2018-09-16"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "bin",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2018-08-26"
+                    }
+                }
+            ]
+        }
+    ],
+    "duplicate": [
+        {
+            "type": "burn",
+            "trash_val": "",
+            "schedules": [
+                {
+                    "type": "weekday",
+                    "value": "0"
+                },
+                {
+                    "type": "weekday",
+                    "value": "6"
+                },
+                {
+                    "type": "none",
+                    "value": ""
+                }
+            ]
+        },
+        {
+            "type": "burn",
+            "trash_val": "",
+            "schedules": [
+                {
+                    "type": "weekday",
+                    "value": "0"
+                },
+                {
+                    "type": "weekday",
+                    "value": "6"
+                },
+                {
+                    "type": "none",
+                    "value": ""
+                }
+            ]
+        }
+    ],
+    "duplicate_other": [
+        {
+            "type": "other",
+            "trash_val": "廃品",
+            "schedules": [
+                {
+                    "type": "weekday",
+                    "value": "0"
+                },
+                {
+                    "type": "weekday",
+                    "value": "6"
+                },
+                {
+                    "type": "none",
+                    "value": ""
+                }
+            ]
+        },
+        {
+            "type": "other",
+            "trash_val": "発泡スチロール",
+            "schedules": [
+                {
+                    "type": "weekday",
+                    "value": "0"
+                },
+                {
+                    "type": "weekday",
+                    "value": "6"
+                },
+                {
+                    "type": "none",
+                    "value": ""
+                }
+            ]
+        },
+        {
+            "type": "other",
+            "trash_val": "廃品",
+            "schedules": [
+                {
+                    "type": "weekday",
+                    "value": "0"
+                },
+                {
+                    "type": "weekday",
+                    "value": "6"
+                },
+                {
+                    "type": "none",
+                    "value": ""
+                }
+            ]
+        }
+    ],
+    "reminder": [
+        {
+            "type": "burn",
+            "schedules": [
+                {
+                    "type": "weekday",
+                    "value": "0"
+                },
+                {
+                    "type": "weekday",
+                    "value": "3"
+                }
+            ]
+        },
+        {
+            "type": "can",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "0",
+                        "start": "2019-07-28"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "other",
+            "trash_val": "家電",
+            "schedules": [
+                {
+                    "type": "biweek",
+                    "value": "6-2"
+                }
+            ]
+        }
+    ],
+    "RemindRequest": [
+        {"target_day":1,"body":[]},{"target_day":2,"body":[]},{"target_day":3,"body":[{"type":"burn","trash_name":"もえるゴミ"}]},{"target_day":4,"body":[]},{"target_day":5,"body":[]},{"target_day":6,"body":[{"type":"other","trash_name":"家電"}]}
+    ]
+}

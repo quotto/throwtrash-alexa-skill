@@ -1,0 +1,46 @@
+{
+    "error":{
+        "general":"Failed to get the information. Please contact skills developers.",
+        "idnotfound":"Registration information can not be found. Please try again after performing the account link."
+    },
+    "help":{
+        "account":"Account link for registration of garbage disposal plans in this skill is required. From the account link for the card, which is displayed on the home screen of Alexa app, please set.",
+        "help":"Specify the 'Today', 'Tomorrow', 'the day after tomorrow' or 'day of the week' You can see the trash's schedule. For example, please say 'What trash on Wednesday?' ",
+        "bye":"Thank you,please use again",
+        "nextprevious":"Please specify the dates you want to know the trash's schedule."
+    },
+    "notice":{
+        "continue":"Please say type of day or trash you want to know.",
+        "pointdayquestion":"Which date do you want to know the schedule for ?",
+        "registerdresponse":"I sent trash's schedule that are registered. You can see information  from the card on Alexa app or display devices.",
+        "fromtrashquestion":"It does not correspond to that type of trash. Please specify other trash.",
+        "nothing":"There is no trash that you can throw away today."
+    },
+    "result": {
+        "launch": "Today is %s. ",
+        "launchnothing": "Nothing today. ",
+        "pointday": "%s1 is %s2.",
+        "pointnothing": "Nothing %s.",
+        "fromtrashtype": "Next %s",
+        "fromtrashtypepart": "%s1 is %s2",
+        "fromtrashdate": "%w %m %d",
+        "fromtrashnothing": "%s is not registerd on trash schedule."
+    },
+    "reminder": {
+        "permission": "You need to enable reminder's permission to use this function. Please enable permission from Alexa app.",
+        "week": "Which set this wekk or next week?",
+        "time": "what time remind?",
+        "finish": "Reminder setting complete."
+    },
+    "card": {
+        "registerd_title": "registerd trash schedule"
+    },
+    "purchase": {
+        "thanks": "Thank you for your purchase. Please try say like set reminder" ,
+        "reprompt": "I'm sorry, one more again.",
+        "cancel": "We look foward to seeing you again."
+    },
+    "separate": ",",
+    "check_multiple": true,
+    "endsep": "and"
+}
