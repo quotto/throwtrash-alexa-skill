@@ -17,7 +17,7 @@ jobs:
           working_directory: src
   deploy:
     docker:
-      -image: circleci/node:8.9
+      - image: circleci/node:8.9
     steps:
       - deploy: 
           command: | 
