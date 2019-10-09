@@ -30,6 +30,6 @@ workflows:
     jobs:
       - setup
       - deploy
-        requires:
-          - setup
+          requires:
+            - setup
 
