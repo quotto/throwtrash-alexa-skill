@@ -4,6 +4,7 @@ const rewire = require('rewire');
 const Client = rewire('../client.js');
 const TextCreator = require('../common/text-creator.js');
 const testData = require('./testdata.json');
+const rp = require('request-promise');
 const locale_list = ['ja-JP', 'en-US'];
 const localeText={}, commonText={}, displayText={};
 locale_list.forEach(locale=>{
@@ -101,21 +102,28 @@ describe('calculateLocalTime',()=>{
 
 describe('Client,ja-JP',function(){
     let client;
-    before(()=>{
+    let nict_data;
+    before(async()=>{
         client = new Client('Asia/Tokyo', new TextCreator('ja-JP'));
+        nict_data = await rp.get('https://ntp-a1.nict.go.jp/cgi-bin/json').then((data)=>{
+            return JSON.parse(data);
+        })
     });
     describe('calculateLocalTime',function(){
         it('今日の日付',function(){
+            const ans = new Date(0);
+            ans.setSeconds(ans.getSeconds()+nict_data.st);
             let dt = client.calculateLocalTime(0);
-            assert.equal(dt.getDate(),(new Date()).getDate());
-            assert.equal(dt.getDay(),(new Date()).getDay());
+            assert.equal(dt.getDate(),ans.getDate());
+            assert.equal(dt.getDay(),ans.getDay());
         });
 
         it('明日の日付',function(){
+            const ans = new Date(0);
+            ans.setSeconds(ans.getSeconds()+nict_data.st+(24*60*60));
             let dt = client.calculateLocalTime(1);
-            var tommorow = (new Date(new Date().valueOf() + (24*60*60*1000)));
-            assert.equal(dt.getDate(),tommorow.getDate());
-            assert.equal(dt.getDay(),tommorow.getDay());
+            assert.equal(dt.getDate(),ans.getDate());
+            assert.equal(dt.getDay(),ans.getDay());
         });
     });
 
