@@ -112,19 +112,18 @@ describe('Client,ja-JP',function(){
     });
     describe('calculateLocalTime',function(){
         it('今日の日付',function(){
-            const ans = new Date(0);
-            ans.setSeconds(ans.getSeconds()+nict_data.st);
+            const ans = new Date(nict_data.st * 1000 + (9*60*60*1000));
             let dt = client.calculateLocalTime(0);
-            assert.equal(dt.getDate(),ans.getDate());
-            assert.equal(dt.getDay(),ans.getDay());
+            assert.equal(dt.getDate(),ans.getUTCDate());
+            assert.equal(dt.getDay(),ans.getUTCDay());
         });
 
         it('明日の日付',function(){
-            const ans = new Date(0);
-            ans.setSeconds(ans.getSeconds()+nict_data.st+(24*60*60));
+            const ans = new Date(nict_data.st * 1000 + (9*60*60*1000));
+            ans.setSeconds(ans.getSeconds()+(24*60*60));
             let dt = client.calculateLocalTime(1);
-            assert.equal(dt.getDate(),ans.getDate());
-            assert.equal(dt.getDay(),ans.getDay());
+            assert.equal(dt.getDate(),ans.getUTCDate());
+            assert.equal(dt.getDay(),ans.getUTCDay());
         });
     });
 
