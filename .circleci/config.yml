@@ -6,6 +6,7 @@ jobs:
   setup:
     docker:
       - image: circleci/node:8.9
+    working_directory: ~/checkout
     steps:
       - checkout
       - run:
@@ -18,13 +19,13 @@ jobs:
           working_directory: src
   deploy:
     executor: aws-cli/default
+    working_directory: ~/checkout/deploy
     steps:
       - aws-cli/install
       - deploy: 
           command: | 
             aws cloudformation package --s3-bucket my-lambda-function-deployment --template-file template.yml --output-template-file packaged-template.yml
             aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID={{ .Environment.<APPID> }}
-          working_directory: deploy
 
 workflows:
   all_build:
