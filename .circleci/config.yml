@@ -11,7 +11,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - npm-deps-{{ .Branch }}-{{ checksum "package-lock.json"}}
+            - npm-deps-{{ .Branch }}-{{ checksum "src/package-lock.json"}}
             - npm-deps-{{ .Branch }}
             - npm-deps-
       - run:
@@ -20,7 +20,7 @@ jobs:
           working_directory: src
       - save_cache:
           key:
-            - npm-deps-{{ .Branch }}-{{ checksum "package-lock.json"}}
+            - npm-deps-{{ .Branch }}-{{ checksum "src/package-lock.json"}}
           paths:
             - src/node_modules
       - run:
