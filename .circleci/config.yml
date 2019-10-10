@@ -19,6 +19,7 @@ jobs:
   deploy:
     executor: aws-cli/default
     steps:
+      - aws-cli/install
       - deploy: 
           command: | 
             aws cloudformation package --s3-bucket my-lambda-function-deployment --template-file template.yml --output-template-file packaged-template.yml
