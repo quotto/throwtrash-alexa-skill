@@ -9,10 +9,20 @@ jobs:
     working_directory: ~/checkout
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - npm-deps-{{ .Branch }}-{{ checksum "package-lock.json"}}
+            - npm-deps-{{ .Branch }}
+            - npm-deps-
       - run:
           name: install
           command: npm install
           working_directory: src
+      - save_cache:
+          keys:
+            - npm-deps-{{ .Branch }}-{{ checksum "package-lock.json"}}
+          paths:
+            - src/node_modules
       - run:
           name: test
           command: npm test
@@ -26,7 +36,7 @@ jobs:
       - deploy: 
           command: | 
             aws cloudformation package --s3-bucket my-lambda-function-deployment --template-file template.yml --output-template-file packaged-template.yml
-            aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID={{ .Environment.<APPID> }}
+            aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID={{ .Environment.APPID }}
           working_directory: deploy
 
 workflows:
