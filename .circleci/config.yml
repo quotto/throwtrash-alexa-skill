@@ -19,7 +19,7 @@ jobs:
           command: npm install
           working_directory: src
       - save_cache:
-          keys:
+          key:
             - npm-deps-{{ .Branch }}-{{ checksum "package-lock.json"}}
           paths:
             - src/node_modules
