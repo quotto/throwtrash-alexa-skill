@@ -103,10 +103,11 @@ describe('calculateLocalTime',()=>{
 describe('Client,ja-JP',function(){
     let client;
     let nict_data;
-    before(async()=>{
+    before((done)=>{
         client = new Client('Asia/Tokyo', new TextCreator('ja-JP'));
-        nict_data = await rp.get('https://ntp-a1.nict.go.jp/cgi-bin/json').then((data)=>{
-            return JSON.parse(data);
+        rp.get('https://ntp-a1.nict.go.jp/cgi-bin/json').then((data)=>{
+            nict_data = JSON.parse(data);
+            done();
         })
     });
     describe('calculateLocalTime',function(){
