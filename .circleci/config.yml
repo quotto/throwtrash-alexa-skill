@@ -32,6 +32,11 @@ jobs:
     steps:
       - checkout
       - aws-cli/install
+      - restore_cache:
+          keys:
+            - npm-deps-{{ .Branch }}-{{ checksum "src/package-lock.json"}}
+            - npm-deps-{{ .Branch }}
+            - npm-deps-
       - deploy: 
           command: | 
             aws cloudformation package --s3-bucket my-lambda-function-deployment --template-file template.yml --output-template-file packaged-template.yml
