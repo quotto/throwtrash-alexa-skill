@@ -12,7 +12,7 @@ Resources:
       FunctionName: ThrowTrashSkill
       Handler: index.handler
       Role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lambda_basic_execution'
-      Runtime: nodejs8.10
+      Runtime: nodejs10.x
       Timeout: 30
     DeletionPolicy: Retain
   LambdaEvent:
