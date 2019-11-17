@@ -72,82 +72,89 @@ class Client {
         return target_day;
     }
 
+    async getEnableTrashData(trash,dt) {
+        const trash_name = trash['type'] ==='other' ? trash['trash_val'] : this.textCreator.getTrashName(trash['type']);
+        const trash_data = {
+            type: trash['type'],
+            name: trash_name
+        };
+
+        const check = (schedule)=>{
+            if(schedule['type'] === 'weekday') {
+                if(Number(schedule['value']) === dt.getDay()) {
+                    return true;
+                }
+            } else if(schedule['type'] === 'biweek') {
+                var matches = schedule['value'].match(/(\d)-(\d)/);
+                var weekday = Number(matches[1]);
+                var turn = Number(matches[2]);
+
+                // 現在何週目かを求める
+                var nowturn = 0;
+                var targetdate = dt.getDate();
+                while(targetdate > 0) {
+                    nowturn += 1;
+                    targetdate -= 7;
+                }
+
+                if(weekday === dt.getDay() && turn === nowturn) {
+                    return true;
+                }
+            } else if(schedule['type'] === 'month') {
+                if(dt.getDate() === Number(schedule['value'])) {
+                    return true;
+                }
+            } else if(schedule['type'] === 'evweek') {
+                if(Number(schedule.value.weekday) === dt.getDay()) {
+                    const start_dt = new Date(schedule.value.start);
+                    start_dt.setHours(0);
+                    start_dt.setMinutes(0);
+                    start_dt.setSeconds(0);
+                    start_dt.setMilliseconds(0);
+
+                    // 今週の日曜日を求める
+                    let current_dt = new Date(dt.toISOString());
+                    current_dt.setHours(0);
+                    current_dt.setMinutes(0);
+                    current_dt.setSeconds(0);
+                    current_dt.setMilliseconds(0);
+                    current_dt.setDate(current_dt.getDate() - current_dt.getDay());
+
+                    // 登録されている日付からの経過日数を求める
+                    const past_date = (current_dt - start_dt) / 1000 / 60 / 60 / 24;
+
+                    // 差が0またはあまりが0であれば隔週に該当
+                    trash_data.schedule = [];
+                    if(past_date === 0 || (past_date / 7) % 2 === 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+        if(trash['schedules'].some(check)) {
+            return trash_data;
+        }
+        return {};
+    }
+
     /**
     trashes:   DynamoDBから取得したJSON形式のパラメータ。
     target_day: チェックするn日目。0なら今日、1なら明日......
     **/
-    checkEnableTrashes(trashes,target_day) {
-        const result = [];
+    async checkEnableTrashes(trashes,target_day) {
         const dt = this.calculateLocalTime(target_day);
+        let promise_list = [];
         trashes.forEach((trash) => {
-            const trash_name = trash['type'] ==='other' ? trash['trash_val'] : this.textCreator.getTrashName(trash['type']);
-            const trash_data = {
-                type: trash['type'],
-                name: trash_name
-            };
-            // const type =  trash['type']
-            trash['schedules'].some((schedule)=>{
-                if(schedule['type'] === 'weekday') {
-                    if(Number(schedule['value']) === dt.getDay()) {
-                        result.push(trash_data);
-                        return true;
-                    }
-                } else if(schedule['type'] === 'biweek') {
-                    var matches = schedule['value'].match(/(\d)-(\d)/);
-                    var weekday = Number(matches[1]);
-                    var turn = Number(matches[2]);
-
-                    // 現在何週目かを求める
-                    var nowturn = 0;
-                    var targetdate = dt.getDate();
-                    while(targetdate > 0) {
-                        nowturn += 1;
-                        targetdate -= 7;
-                    }
-
-                    if(weekday === dt.getDay() && turn === nowturn) {
-                        result.push(trash_data);
-                        return true;
-                    }
-                } else if(schedule['type'] === 'month') {
-                    if(dt.getDate() === Number(schedule['value'])) {
-                        result.push(trash_data);
-                        return true;
-                    }
-                } else if(schedule['type'] === 'evweek') {
-                    if(Number(schedule.value.weekday) === dt.getDay()) {
-                        const start_dt = new Date(schedule.value.start);
-                        start_dt.setHours(0);
-                        start_dt.setMinutes(0);
-                        start_dt.setSeconds(0);
-                        start_dt.setMilliseconds(0);
-
-                        // 今週の日曜日を求める
-                        let current_dt = new Date(dt.toISOString());
-                        current_dt.setHours(0);
-                        current_dt.setMinutes(0);
-                        current_dt.setSeconds(0);
-                        current_dt.setMilliseconds(0);
-                        current_dt.setDate(current_dt.getDate() - current_dt.getDay());
-
-                        // 登録されている日付からの経過日数を求める
-                        const past_date = (current_dt - start_dt) / 1000 / 60 / 60 / 24;
-
-                        // 差が0またはあまりが0であれば隔週に該当
-                        trash_data.schedule = [];
-                        if(past_date === 0 || (past_date / 7) % 2 === 0) {
-                            result.push(trash_data);
-                            return true;
-                        }
-                    }
-                }
-            });
+            promise_list.push(
+                this.getEnableTrashData(trash,dt)
+            );
         });
+        const result = await Promise.all(promise_list);
         // 同名のゴミがあった場合に重複を排除する
         const keys = [];
         return result.filter((value)=>{
             const key = value.type+value.name;
-            if(keys.indexOf(key) >= 0) {
+            if(!value.type || keys.indexOf(key) >= 0) {
                 return false;
             } else {
                 keys.push(key);

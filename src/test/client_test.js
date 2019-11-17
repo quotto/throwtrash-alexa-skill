@@ -15,7 +15,7 @@ locale_list.forEach(locale=>{
 
 
 describe('Client,en-US',function(){
-    it('checkEnableTrashes',()=>{
+    it('checkEnableTrashes',async()=>{
         const client = new Client('America/New_York', new TextCreator('en-US'));
         const stub = sinon.stub(client,'calculateLocalTime');
         stub.withArgs(0).returns(new Date('2018/03/01'));
@@ -23,7 +23,7 @@ describe('Client,en-US',function(){
             const testdata = [ { 'type': 'burn','trash_val': '', 'schedules': [ { 'type': 'weekday', 'value': '3' }, { 'type': 'weekday', 'value': '6' }, { 'type': 'none', 'value': '' } ] }, { 'type': 'plastic', 'trash_val': '','schedules': [ { 'type': 'weekday', 'value': '1' }, { 'type': 'none', 'value': '' }, { 'type': 'none', 'value': '' } ] }, { 'type': 'paper','trash_val': '', 'schedules': [ { 'type': 'none', 'value': '' }, { 'type': 'biweek', 'value': '1-2' }, { 'type': 'none', 'value': '' } ]}, { 'type': 'plastic', 'trash_val': '','schedules': [ { 'type': 'weekday', 'value': '4' }, { 'type': 'none', 'value': '' }, { 'type': 'none', 'value': '' } ] }, { 'type': 'petbottle', 'trash_val': '','schedules': [ { 'type': 'weekday', 'value': '4' }, { 'type': 'month', 'value': '11' }, { 'type': 'none', 'value': '' } ] } ];
 
             try{
-                let result = client.checkEnableTrashes(testdata,0);
+                let result = await client.checkEnableTrashes(testdata,0);
                 assert.equal(result.length,2);
                 assert.equal(result[0].name,'plastic');
                 assert.equal(result[1].name,'plastic bottle');
@@ -129,26 +129,26 @@ describe('Client,ja-JP',function(){
 
     describe('checkEnableTrashes',function(){
         const client = new Client('Asia/Tokyo', new TextCreator('ja-JP'));
-        it('weekday',function(){
+        it('weekday',async()=>{
             const stub = sinon.stub(client,'calculateLocalTime');
             stub.withArgs(0).returns(new Date('2018/03/01'));
 
             try{
-                let result = client.checkEnableTrashes(testData.checkEnableTrashes,0);
+                let result = await client.checkEnableTrashes(testData.checkEnableTrashes,0);
                 assert.equal(result.length,2);
-                assert.equal('ビン、カン',result[0].name);
-                assert.equal('ペットボトル',result[1].name);
+                assert.equal(result[0].name,'ビン、カン');
+                assert.equal(result[1].name,'ペットボトル');
             } finally{
                 stub.restore();
             }
 
         });
-        it('biweek',function(){
+        it('biweek',async()=>{
             const stub = sinon.stub(client,'calculateLocalTime');
             stub.withArgs(0).returns(new Date('2018/03/12'));
 
             try{
-                let result = client.checkEnableTrashes(testData.checkEnableTrashes,0);
+                let result = await client.checkEnableTrashes(testData.checkEnableTrashes,0);
                 assert.equal(2,result.length);
                 assert.equal('プラスチック',result[0].name);
                 assert.equal('古紙',result[1].name);
@@ -156,19 +156,19 @@ describe('Client,ja-JP',function(){
                 stub.restore();
             }
         });
-        it('month',function(){
+        it('month',async()=>{
             const stub = sinon.stub(client,'calculateLocalTime');
             stub.withArgs(0).returns(new Date('2018/03/11'));
 
             try{
-                let result = client.checkEnableTrashes(testData.checkEnableTrashes,0);
-                assert.equal(1,result.length);
-                assert.equal('ペットボトル',result[0].name);
+                let result = await client.checkEnableTrashes(testData.checkEnableTrashes,0);
+                assert.equal(result.length,1);
+                assert.equal(result[0].name,'ペットボトル');
             }finally{
                 stub.restore();
             }
         });
-        it('evweek',function(){
+        it('evweek',async()=>{
             const stub = sinon.stub(client,'calculateLocalTime');
             stub.withArgs(0).returns(new Date('2018-09-26'));
 
@@ -182,7 +182,7 @@ describe('Client,ja-JP',function(){
              * 6.4週間前のため一致
              */
             try{
-                const result = client.checkEnableTrashes(testData.evweek,0);
+                const result = await client.checkEnableTrashes(testData.evweek,0);
                 assert.equal(result.length,3);
                 assert.equal(result[0].name,'もえるゴミ');
                 assert.equal(result[1].name,'プラスチック');
@@ -191,13 +191,13 @@ describe('Client,ja-JP',function(){
                 stub.restore();
             }
         });
-        it('none',function(){
+        it('none',async()=>{
             const client = new Client('Asia/Tokyo', new TextCreator('ja-JP'));
             const stub = sinon.stub(client,'calculateLocalTime');
             stub.withArgs(0).returns(new Date('2018/03/04'));
 
             try{
-                let result = client.checkEnableTrashes(testData.checkEnableTrashes,0);
+                let result = await client.checkEnableTrashes(testData.checkEnableTrashes,0);
                 assert.equal(0,result.length);
             } finally {
                 stub.restore();
@@ -205,21 +205,21 @@ describe('Client,ja-JP',function(){
         });
     });
     describe('checkEnableTrashes duplicate 重複排除機能',function(){
-        it('重複の排除',function(){
+        it('重複の排除',async()=>{
             const client = new Client('Asia/Tokyo', new TextCreator('ja-JP'));
             const stub = sinon.stub(client,'calculateLocalTime');
             stub.withArgs(0).returns(new Date('2018-09-29 00:00'));
 
-            const response = client.checkEnableTrashes(testData.duplicate,0);
+            const response = await client.checkEnableTrashes(testData.duplicate,0);
             assert.equal(response.length,1);
 
             stub.restore();
         });
-        it('otherの場合はtrash_valが同じ場合のみ重複排除',function(){
+        it('otherの場合はtrash_valが同じ場合のみ重複排除',async()=>{
             const stub = sinon.stub(client,'calculateLocalTime');
             stub.withArgs(0).returns(new Date('2018-08-26 00:00'));
 
-            let response = client.checkEnableTrashes(testData.duplicate_other,0);
+            let response = await client.checkEnableTrashes(testData.duplicate_other,0);
             assert.equal(response.length,2);
             assert.equal(response[0].name,'廃品');
             assert.equal(response[1].name,'発泡スチロール');

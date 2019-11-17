@@ -120,9 +120,15 @@ const LaunchRequestHandler = {
                     .getResponse();
             }
 
-            const first = client.checkEnableTrashes(data.response, 0);
-            const second = client.checkEnableTrashes(data.response, 1);
-            const third = client.checkEnableTrashes(data.response, 2);
+            const promise_list = [
+                client.checkEnableTrashes(data.response, 0),
+                client.checkEnableTrashes(data.response, 1),
+                client.checkEnableTrashes(data.response, 2)
+            ];
+            const all = await Promise.all(promise_list);
+            const first = all[0];
+            const second = all[1];
+            const third = all[2] ;
 
             const reprompt_message = textCreator.launch_reprompt;
             if (requestEnvelope.context.System.device.supportedInterfaces.Display) {
@@ -199,9 +205,15 @@ const GetPointDayTrashesHandler = {
                     target_day = client.getTargetDayByWeekday(PointDayValue[slotValue].weekday);
                 }
 
-                const first = client.checkEnableTrashes(trash_result.response, target_day);
-                const second = client.checkEnableTrashes(trash_result.response, target_day + 1);
-                const third = client.checkEnableTrashes(trash_result.response, target_day + 2);
+                const promise_list = [
+                    client.checkEnableTrashes(trash_result.response, 0),
+                    client.checkEnableTrashes(trash_result.response, 1),
+                    client.checkEnableTrashes(trash_result.response, 2)
+                ];
+                const all = await Promise.all(promise_list);
+                const first = all[0];
+                const second = all[1];
+                const third = all[2];
                 responseBuilder.speak(textCreator.getPointdayResponse(slotValue, first));
                 if (requestEnvelope.context.System.device.supportedInterfaces.Display) {
                     const schedule_directive = displayCreator.getThrowTrashesDirective(target_day, [
