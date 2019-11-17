@@ -406,7 +406,7 @@ const SetReminderHandler = {
         const accessToken = requestEnvelope.session.user.accessToken;
         const get_trash_ready = Client.getTrashData(accessToken);
         if(requestEnvelope.request.intent.confirmationStatus === 'CONFIRMED') {
-            return Promise.all([init_ready, get_trash_ready]).then(results => {
+            return Promise.all([init_ready, get_trash_ready]).then(async(results) => {
                 if (results[1].status === 'error') {
                     return responseBuilder
                         .speak(textCreator[results[1].msgId])
@@ -415,7 +415,7 @@ const SetReminderHandler = {
                 }
                 const weekTypeSlot = requestEnvelope.request.intent.slots.WeekTypeSlot.resolutions.resolutionsPerAuthority[0].values[0].value;
                 const time = requestEnvelope.request.intent.slots.TimerSlot.value;
-                const remind_data = client.getRemindBody(Number(weekTypeSlot.id), results[1].response);
+                const remind_data = await client.getRemindBody(Number(weekTypeSlot.id), results[1].response);
                 const remind_requests = createRemindRequest(remind_data, time, textCreator.locale);
 
                 const ReminderManagementServiceClient = serviceClientFactory.getReminderManagementServiceClient();

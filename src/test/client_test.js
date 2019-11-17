@@ -471,28 +471,28 @@ describe('getRemindBody',()=>{
         client = new Client('Asia/Tokyo', new TextCreator('ja-JP'));
     });
     describe('thisweek', ()=>{
-        it('sunday', ()=>{
+        it('sunday', async()=>{
             const stub = sinon.stub(Date.prototype, 'getTime');
             stub.withArgs().returns(1564892787630); //2019/8/4
-            const result_list = client.getRemindBody(0, testData.reminder);
+            const result_list = await client.getRemindBody(0, testData.reminder);
             assert.equal(result_list.length, 6)
             assert.equal(result_list[2].body[0].type, 'burn')
             assert.equal(result_list[5].body[0].type, 'other')
             stub.restore();
         });
-        it('saturday', ()=>{
+        it('saturday', async()=>{
             const stub = sinon.stub(Date.prototype, 'getTime');
             stub.withArgs().returns(1565362800000); //2019/8/10
-            const result_list = client.getRemindBody(0, testData.reminder);
+            const result_list = await client.getRemindBody(0, testData.reminder);
             assert.equal(result_list.length, 0)
             stub.restore();
         })
     });
     describe('nextweek', ()=>{
-        it('sunday', ()=>{
+        it('sunday', async()=>{
             const stub = sinon.stub(Date.prototype, 'getTime');
             stub.withArgs().returns(1564892787630); //2019/8/4
-            const result_list = client.getRemindBody(1, testData.reminder);
+            const result_list = await client.getRemindBody(1, testData.reminder);
             assert.equal(result_list.length, 7)
             assert.equal(result_list[0].body[0].type, 'burn')
             assert.equal(result_list[0].body[1].type, 'can')
@@ -500,10 +500,10 @@ describe('getRemindBody',()=>{
             assert.equal(result_list[6].body.length, 0)
             stub.restore();
         });
-        it('saturday',()=>{
+        it('saturday',async()=>{
             const stub = sinon.stub(Date.prototype, 'getTime');
             stub.withArgs().returns(1565362800000); //2019/8/10
-            const result_list = client.getRemindBody(1, testData.reminder);
+            const result_list = await client.getRemindBody(1, testData.reminder);
             assert.equal(result_list.length, 7)
             assert.equal(result_list[0].body[0].type, 'burn')
             assert.equal(result_list[0].body[1].type, 'can')

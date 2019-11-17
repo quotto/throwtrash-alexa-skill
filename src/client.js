@@ -277,7 +277,7 @@ class Client {
      * @param {Number} target_week  0:今週, 1:来週
      * @returns {Array} {target_day: オブジェクト配列
      */
-    getRemindBody(target_week, trash_data) {
+    async getRemindBody(target_week, trash_data) {
         const result_list = [];
         const today_dt = this.calculateLocalTime(0);
         const weekNum = today_dt.getDay()
@@ -285,7 +285,7 @@ class Client {
             // 今週の場合は明日以降の土曜日までの日にちを算出する
             for(let i=0; i<(6 - weekNum); i++) {
                 const target_day = i+1;
-                const result = this.checkEnableTrashes(trash_data, target_day)
+                const result = await this.checkEnableTrashes(trash_data, target_day)
                 result_list.push({
                     target_day: target_day,
                     body: result
@@ -296,7 +296,7 @@ class Client {
             // 来週の場合は次の日曜日を求める
             for(let i=0; i<7; i++) {
                 const target_day = i+padding_date
-                const result = this.checkEnableTrashes(trash_data, target_day);
+                const result = await this.checkEnableTrashes(trash_data, target_day);
                 result_list.push({
                     target_day:  target_day,
                     body: result
