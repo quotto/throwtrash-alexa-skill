@@ -1,7 +1,7 @@
 'use strict';
 const Alexa = require('ask-sdk');
 const { DynamoDbPersistenceAdapter } = require('ask-sdk-dynamodb-persistence-adapter');
-const Client = require('client.js');
+const Client = require('./client.js');
 const TextCreator = require('./common/text-creator');
 const DisplayCreator = require('./common/display-creator');
 let textCreator, displayCreator, client;
