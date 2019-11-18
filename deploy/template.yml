@@ -17,6 +17,7 @@ Resources:
       Environment:
         Variables:
           APP_REGION: !Sub 'AWS::Region'
+          APP_ID: !Ref APPID
     DeletionPolicy: Retain
   LambdaEvent:
     Type: 'AWS::Lambda::Permission'
