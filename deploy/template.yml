@@ -14,6 +14,9 @@ Resources:
       Role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lambda_basic_execution'
       Runtime: nodejs10.x
       Timeout: 30
+      Environment:
+        Variables:
+          APP_REGION: !Sub 'AWS::Region'
     DeletionPolicy: Retain
   LambdaEvent:
     Type: 'AWS::Lambda::Permission'

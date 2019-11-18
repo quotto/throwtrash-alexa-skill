@@ -5,7 +5,7 @@ const moment = require('moment-timezone');
 
 const AWS = require('aws-sdk');
 
-const dynamoClient = new AWS.DynamoDB.DocumentClient({region: process.env.AWS_REGION});
+const dynamoClient = new AWS.DynamoDB.DocumentClient({region: process.env.APP_REGION});
 class Client {
     constructor(_timezone, _text_creator){
         this.timezone = _timezone || 'utc';
