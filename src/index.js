@@ -6,6 +6,9 @@ const TextCreator = require('./common/text-creator');
 const DisplayCreator = require('./common/display-creator');
 let textCreator, displayCreator, client;
 
+const logger = require('./logger');
+logger.LEVEL = process.env.STAGE && process.env.STAGE === "TEST" ? logger.DEBUG : logger.INFO;
+
 const PointDayValue = [
     {value:0},
     {value:1},
@@ -36,7 +39,7 @@ const init = async (handlerInput,option)=>{
         return (deviceId ? 
             upsServiceClient.getSystemTimeZone(deviceId) : new Promise(resolve => { resolve('Asia/Tokyo') })
         ).then(timezone=>{
-            console.log('timezone:', timezone);
+            logger.debug('timezone:', timezone);
             return client = new Client(timezone, textCreator); 
         });
     } else {
@@ -59,10 +62,10 @@ const updateUserHistory = (handlerInput)=> {
         handlerInput.attributesManager.setPersistentAttributes(attributes);
         return handlerInput.attributesManager.savePersistentAttributes();
     }).then(()=>{
-        console.log('user count up', get_schedule_count);
+        logger.info('user count up', get_schedule_count);
         return get_schedule_count;
     }).catch(err=>{
-        console.log(err);
+        logger.error(err);
         return 0;
     })
 };
@@ -341,15 +344,15 @@ const CheckReminderHandler = {
     },
     async handle(handlerInput) {
         const {responseBuilder, requestEnvelope} = handlerInput;
-        // const consentToken = requestEnvelope.context.System.user.permissions
-        //     && requestEnvelope.context.System.user.permissions.consentToken;
-        // if (!consentToken) {
-        //     // リマインダーのパーミッションが許可されていない場合は許可を促す
-        //     return responseBuilder
-        //         .speak(textCreator.require_reminder_permission)
-        //         .withAskForPermissionsConsentCard(['alexa::alerts:reminders:skill:readwrite'])
-        //         .getResponse();
-        // }
+        const consentToken = requestEnvelope.context.System.user.permissions
+            && requestEnvelope.context.System.user.permissions.consentToken;
+        if (!consentToken) {
+            // リマインダーのパーミッションが許可されていない場合は許可を促す
+            return responseBuilder
+                .speak(textCreator.require_reminder_permission)
+                .withAskForPermissionsConsentCard(['alexa::alerts:reminders:skill:readwrite'])
+                .getResponse();
+        }
 
         const accessToken = requestEnvelope.session.user.accessToken;
         if (!accessToken) {
@@ -423,7 +426,8 @@ const SetReminderHandler = {
                 remind_requests.forEach((request_body) => {
                     remind_list.push(
                         ReminderManagementServiceClient.createReminder(request_body).then(data => {
-                            console.log(data);
+                            logger.info('CreateReminder:');
+                            logger.info(data);
                         })
                     );
                 });
@@ -433,7 +437,7 @@ const SetReminderHandler = {
                         .withShouldEndSession(true)
                         .getResponse();
                 }).catch((err)=>{
-                    console.log(err);
+                    logger.error(err);
                     // ReminderManagementServiceClientでは権限が許可されていない場合401エラーが返る
                     if(err.statusCode === 401 || err.statuScode === 403) {
                         return responseBuilder

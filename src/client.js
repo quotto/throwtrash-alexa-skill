@@ -2,10 +2,14 @@
 
 const _ = require('lodash');
 const moment = require('moment-timezone');
+const rp = require('request-promise');
 
 const AWS = require('aws-sdk');
 
 const dynamoClient = new AWS.DynamoDB.DocumentClient({region: process.env.APP_REGION});
+
+const logger = require('./logger');
+logger.LEVEL = process.env.STAGE && process.env.STAGE === 'TEST' ? logger.DEBUG : logger.INFO;
 class Client {
     constructor(_timezone, _text_creator){
         this.timezone = _timezone || 'utc';
@@ -25,7 +29,7 @@ class Client {
         };
         return dynamoClient.get(params).promise().then(data=>{
             if(typeof(data['Item'])==='undefined') {
-                console.log(`[ERROR] User Not Found => ${access_token}`);
+                logger.error(`User Not Found => ${access_token}`);
                 return {
                         status:'error',
                         msgId: 'id_not_found_error' 
@@ -37,7 +41,7 @@ class Client {
                 };
             }
         }).catch(err=>{
-            console.log(err);
+            logger.error(err);
             return {
                     status:'error',
                     msgId: 'general_error'
@@ -150,6 +154,8 @@ class Client {
             );
         });
         const result = await Promise.all(promise_list);
+        logger.debug('CheckEnableTrashes result:');
+        logger.debug(result);
         // 同名のゴミがあった場合に重複を排除する
         const keys = [];
         return result.filter((value)=>{
@@ -199,7 +205,7 @@ class Client {
                             // 現在日>設定日の場合は翌月の1日をセットする
                             next_dt.setMonth(next_dt.getMonth() + 1);
                             next_dt.setDate(1);
-                            console.log(next_dt);
+                            logger.info(next_dt);
                         } else {
                             // 現在日<設定日の場合は差分の分だけ日にちを進める
                             next_dt.setDate(next_dt.getDate() + diff_date);
@@ -304,6 +310,21 @@ class Client {
             }
         }
         return result_list;
+    }
+
+    async compareTwoText(text1, text2) {
+       rp({
+           uri:process.env.MecabAPI_URL,
+           qs: {
+               text1: text1,
+               text2: text2
+           },
+           json: true
+        }).then(response=>{
+            if(response.statusCode==200) {
+                return response.score;
+            }
+        })
     }
 }
 
