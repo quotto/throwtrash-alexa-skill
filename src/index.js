@@ -209,9 +209,9 @@ const GetPointDayTrashesHandler = {
                 }
 
                 const promise_list = [
-                    client.checkEnableTrashes(trash_result.response, 0),
-                    client.checkEnableTrashes(trash_result.response, 1),
-                    client.checkEnableTrashes(trash_result.response, 2)
+                    client.checkEnableTrashes(trash_result.response, target_day),
+                    client.checkEnableTrashes(trash_result.response, target_day + 1),
+                    client.checkEnableTrashes(trash_result.response, target_day + 2)
                 ];
                 const all = await Promise.all(promise_list);
                 const first = all[0];
