@@ -3,26 +3,75 @@ Transform: AWS::Serverless-2016-10-31
 Description: The AWS CloudFormation template for BSE Workflow
 Parameters:
   APPID:
-    Type: 'String'
+    Type: "String"
+  STAGE:
+    Type: "String"
+    Default: "PRODUCTION"
 Resources:
-  ThrowTrashSkill:
-    Type: 'AWS::Lambda::Function'
+  LambdaExecPolicy:
+    Type: "AWS::IAM::Policy"
     Properties:
-      Code: ../src
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action: "dynamodb:*"
+            Resource: 
+              - !GetAtt HistoryTable.Arn
+              - !Sub "arn:aws:dynamodb:*:${AWS::AccountId}:table/TrashSchedule"
+          -
+            Effect: "Allow"
+            Action: "lambda:*"
+            Resource: 
+              - !GetAtt ThrowTrashSkill.Arn
+      PolicyName: !Sub "throwtrash-lambda-policy-${AWS::Region}"
+      Roles:
+        - !Ref LambdaExecRole
+    DeletionPolicy: Retain
+  LambdaExecRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      RoleName: !Sub "throwtrash-lambda-role-${AWS::Region}"
+    DeletionPolicy: Retain
+  HistoryTable:
+    Type: "AWS::Serverless::SimpleTable"
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: String
+      TableName: ThrowTrashHistory
+    DeletionPolicy: Retain
+  ThrowTrashSkill:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri: ../src
       FunctionName: ThrowTrashSkill
       Handler: index.handler
-      Role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lambda_basic_execution'
+      Role: !GetAtt LambdaExecRole.Arn
       Runtime: nodejs10.x
       Timeout: 30
       Environment:
         Variables:
-          APP_REGION: !Sub 'AWS::Region'
+          APP_REGION: !Sub "${AWS::Region}"
           APP_ID: !Ref APPID
+          STAGE: !Ref STAGE
     DeletionPolicy: Retain
   LambdaEvent:
-    Type: 'AWS::Lambda::Permission'
+    Type: "AWS::Lambda::Permission"
     Properties:
-      Action: 'lambda:InvokeFunction'
+      Action: "lambda:InvokeFunction"
       FunctionName: !Ref ThrowTrashSkill
-      Principal: 'alexa-appkit.amazon.com'
+      Principal: "alexa-appkit.amazon.com"
       EventSourceToken: !Ref APPID
