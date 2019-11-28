@@ -27,8 +27,8 @@ jobs:
           command: |
             sudo npm install -g ask-cli
             mkdir -p ~/.ask
+            MecabAPI_URL = ${MecabAPI_URL}/test
             echo "${ASK_CLI_CONFIG}" > ~/.ask/cli_config
-            echo `ask api get-model -s ${APPID} --stage development -l ja-JP` | jq '.' > test/model.json
             npm test
           working_directory: src
   deploy:
@@ -46,10 +46,10 @@ jobs:
           command: | 
             if [ "${CIRCLE_BRANCH}" == "master"]; then
               STAGE = "PRODUCTION"
-              MecabApi_URL = ${MecabAPI_URL_PRODUCTION}
+              MecabAPI_URL = ${MecabAPI_URL}/production
             else
               STAGE = "TEST"
-              MecabApi_URL = ${MecabAPI_URL_TEST}
+              MecabAPI_URL = ${MecabAPI_URL}/test
             fi
             aws cloudformation package --s3-bucket my-lambda-function-deployment --template-file template.yml --output-template-file packaged-template.yml
             aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID=${APPID} STAGE=${STAGE} MecabAPI_URL=${MecabAPI_URL} --role-arn ${CloudFOrmationRole}
