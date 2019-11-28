@@ -39,8 +39,15 @@ jobs:
             - npm-deps-
       - deploy: 
           command: | 
+            if [ "${CIRCLE_BRANCH}" == "master"]; then
+              STAGE = "PRODUCTION"
+              MecabApi_URL = ${MecabAPI_URL_PRODUCTION}
+            else
+              STAGE = "TEST"
+              MecabApi_URL = ${MecabAPI_URL_TEST}
+            fi
             aws cloudformation package --s3-bucket my-lambda-function-deployment --template-file template.yml --output-template-file packaged-template.yml
-            aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID=${APPID}
+            aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID=${APPID} STAGE=${STAGE} MecabAPI_URL=${MecabAPI_URL} --role-arn ${CloudFOrmationRole}
           working_directory: deploy
 
 workflows:

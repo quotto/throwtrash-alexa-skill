@@ -7,6 +7,8 @@ Parameters:
   STAGE:
     Type: "String"
     Default: "PRODUCTION"
+  MecabApi_URL:
+    Type: "String"
 Resources:
   LambdaExecPolicy:
     Type: "AWS::IAM::Policy"
@@ -83,9 +85,6 @@ Resources:
               - "id"
               - "signinService"
             ProjectionType: "INCLUDE"
-          ProvisionedThroughput:
-            ReadCapacityUnits: 5
-            WriteCapacityUnits: 5
       StreamSpecification:
         StreamViewType: "NEW_IMAGE"
       TableName: "TrashSchedule"
@@ -103,6 +102,7 @@ Resources:
           APP_REGION: !Sub "${AWS::Region}"
           APP_ID: !Ref APPID
           STAGE: !Ref STAGE
+          MecabAPI_URL: !Ref MecabAPI_URL
     DeletionPolicy: Retain
   LambdaEvent:
     Type: "AWS::Lambda::Permission"
