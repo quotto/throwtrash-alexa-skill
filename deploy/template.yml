@@ -19,7 +19,7 @@ Resources:
             Action: "dynamodb:*"
             Resource: 
               - !GetAtt HistoryTable.Arn
-              - !Sub "arn:aws:dynamodb:*:${AWS::AccountId}:table/TrashSchedule"
+              - !GetAtt TrashScheduleTable.Arn
           -
             Effect: "Allow"
             Action: "lambda:*"
@@ -53,6 +53,42 @@ Resources:
         Type: String
       TableName: ThrowTrashHistory
     DeletionPolicy: Retain
+  TrashScheduleTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      AttributeDefinitions:
+        - 
+          AttributeName: "id"
+          AttributeType: "S"
+        - 
+          AttributeName: "signinId"
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: "id"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      GlobalSecondaryIndexes:
+        -
+          IndexName: "signinId-index"
+          KeySchema:
+            - 
+              AttributeName: "signinId"
+              KeyType: "HASH"
+          Projection:
+            NonKeyAttributes:
+              - "description"
+              - "id"
+              - "signinService"
+            ProjectionType: "INCLUDE"
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      StreamSpecification:
+        StreamViewType: "NEW_IMAGE"
+      TableName: "TrashSchedule"
   ThrowTrashSkill:
     Type: "AWS::Serverless::Function"
     Properties:
