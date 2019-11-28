@@ -1,2 +1,3 @@
 */node_modules
 deploy/package-template.yml
+src/test/model.json
