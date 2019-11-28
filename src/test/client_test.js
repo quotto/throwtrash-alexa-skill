@@ -252,6 +252,84 @@ describe('Client,ja-JP',function(){
         });
     });
 
+    describe('calculateNextDayBySchedule',()=>{
+        const client = new Client('Asia/Tokyo', new TextCreator('ja-JP'));
+        const today = new Date('2019/11/27'); //水曜日
+        it('weekday:当日',()=>{
+            const next_dt = client.calculateNextDateBySchedule(today, 'weekday', '3')
+            assert.equal(next_dt.getDate(), 27);
+        });
+        it('weekday:同じ週',()=>{
+            const next_dt = client.calculateNextDateBySchedule(today, 'weekday', '6')
+            assert.equal(next_dt.getDate(), 30);
+        });
+        it('weekday:次の週',()=>{
+            const next_dt = client.calculateNextDateBySchedule(new Date('2019//11/20'), 'weekday', '2')
+            assert.equal(next_dt.getDate(), 26);
+        });
+        it('weekday:月替り',()=>{
+            const next_dt = client.calculateNextDateBySchedule(new Date('2019//11/27'), 'weekday', '2')
+            assert.equal(next_dt.getMonth(), 11);
+            assert.equal(next_dt.getDate(), 3);
+        });
+
+        it('month:当日',()=>{
+            const next_dt = client.calculateNextDateBySchedule(today, 'month', 27);
+            assert.equal(next_dt.getDate(), 27);
+        });
+        it('month:同じ月',()=>{
+            const next_dt = client.calculateNextDateBySchedule(today, 'month', 29);
+            assert.equal(next_dt.getDate(), 29);
+        });
+        it('month:月替り',()=>{
+            const next_dt = client.calculateNextDateBySchedule(today, 'month', 1);
+            assert.equal(next_dt.getMonth(), 11);
+            assert.equal(next_dt.getDate(), 1);
+        });
+
+        it('biweek:当日',()=>{
+            const next_dt = client.calculateNextDateBySchedule(new Date('2019/11/22'), 'biweek', '5-4');
+            assert.equal(next_dt.getDate(), 22);
+
+        });
+        it('biweek:同じ週',()=>{
+            const next_dt = client.calculateNextDateBySchedule(new Date('2019/11/22'), 'biweek', '6-4');
+            assert.equal(next_dt.getDate(), 23);
+        });
+        it('biweek:次の週',()=>{
+            const next_dt = client.calculateNextDateBySchedule(new Date('2019/11/22'), 'biweek', '0-4');
+            assert.equal(next_dt.getDate(), 24);
+        });
+        it('biweek月替り',()=>{
+            const next_dt = client.calculateNextDateBySchedule(new Date('2019/11/22'), 'biweek', '0-1');
+            assert.equal(next_dt.getMonth(), 11);
+            assert.equal(next_dt.getDate(), 1);
+        });
+
+        it('evweek:当日', ()=>{
+            const next_dt = client.calculateNextDateBySchedule(new Date('2019/11/22'), 'evweek', {start: '2019-11-17',weekday: '5'});
+            assert.equal(next_dt.getDate(), 22);
+        })
+        it('evweek:同じ週', ()=>{
+            const next_dt = client.calculateNextDateBySchedule(new Date('2019/11/21'), 'evweek', {start: '2019-11-3',weekday: '5'});
+            assert.equal(next_dt.getDate(), 22);
+        })
+        it('evweek:次の週', ()=>{
+            const next_dt = client.calculateNextDateBySchedule(new Date('2019/11/21'), 'evweek', {start: '2019-11-10',weekday: '5'});
+            assert.equal(next_dt.getDate(), 29);
+        })
+        it('evweek:開始が未来日', ()=>{
+            const next_dt = client.calculateNextDateBySchedule(new Date('2019/11/21'), 'evweek', {start: '2019-11-24',weekday: '5'});
+            assert.equal(next_dt.getDate(), 29);
+        })
+        it('evweek:月替り', ()=>{
+            const next_dt = client.calculateNextDateBySchedule(new Date('2019/11/21'), 'evweek', {start: '2019-11-17',weekday: '1'});
+            assert.equal(next_dt.getMonth(), 11);
+            assert.equal(next_dt.getDate(), 2);
+        })
+
+    })
+
     describe('getDayFromTrashType',()=>{
         let client;
         before(()=>{
@@ -525,6 +603,27 @@ describe('getTrashData', function () {
         Client.getTrashData('1439d8b1-b41e-45f9-9afc-ecdfdaea1d83', 0).then(result => {
             assert.equal(result.status, 'error');
             assert.equal(result.msgId, 'id_not_found_error');
+            done();
+        });
+    });
+});
+
+describe('compareTwoText',()=>{
+    it('正常データ',done=>{
+        Client.compareTwoText('資源ごみ','資源ごみ').then(result=>{
+            assert.equal(result,1)
+            done();
+        }).catch(err=>{
+            assert.fail(err);
+            done();
+        });
+    });
+    it('異常データ', done=>{
+        Client.compareTwoText('','ビン').then(()=>{
+            assert.fail()
+            done();
+        }).catch(()=>{
+            assert.ok(true);
             done();
         });
     });

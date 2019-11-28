@@ -39,7 +39,7 @@ const init = async (handlerInput,option)=>{
         return (deviceId ? 
             upsServiceClient.getSystemTimeZone(deviceId) : new Promise(resolve => { resolve('Asia/Tokyo') })
         ).then(timezone=>{
-            logger.debug('timezone:', timezone);
+            logger.debug('timezone:'+timezone);
             return client = new Client(timezone, textCreator); 
         });
     } else {
@@ -122,7 +122,6 @@ const LaunchRequestHandler = {
                     .withShouldEndSession(true)
                     .getResponse();
             }
-
             const promise_list = [
                 client.checkEnableTrashes(data.response, 0),
                 client.checkEnableTrashes(data.response, 1),
@@ -291,6 +290,8 @@ const GetRegisteredContent = {
             const card_text = textCreator.getRegisterdContentForCard(schedule_data);
 
             return responseBuilder.speak(textCreator.all_schedule).withSimpleCard(textCreator.registerd_card_title, card_text).getResponse();
+        }).catch(()=>{
+            return responseBuilder.speak(textCreator.general_error).withShouldEndSession(true).getResponse();
         });
     }
 };
@@ -311,27 +312,68 @@ const GetDayFromTrashTypeIntent = {
                 .getResponse();
         }
         const resolutions = requestEnvelope.request.intent.slots.TrashTypeSlot.resolutions;
+        const get_trash_ready = Client.getTrashData(accessToken);
         if(resolutions && resolutions.resolutionsPerAuthority[0].status.code === 'ER_SUCCESS_MATCH') {
             const slotValue =resolutions.resolutionsPerAuthority[0].values[0].value;
-
-            const get_trash_ready = Client.getTrashData(accessToken);
-            return Promise.all([init_ready, get_trash_ready]).then(results=>{
-                const trash_result = results[1];
-                if (trash_result.status === 'error') {
-                    return responseBuilder
-                        .speak(textCreator[trash_result.msgId])
-                        .withShouldEndSession(true)
-                        .getResponse();
-                }
-                const trash_data = client.getDayFromTrashType(trash_result.response, slotValue.id);
+            const results = await  Promise.all([init_ready, get_trash_ready]);
+            const trash_result = results[1];
+            if (trash_result.status === 'error') {
+                return responseBuilder
+                    .speak(textCreator[trash_result.msgId])
+                    .withShouldEndSession(true)
+                    .getResponse();
+            }
+            const trash_data = client.getDayFromTrashType(trash_result.response, slotValue.id);
+            if(Object.keys(trash_data).length > 0) {
+                logger.debug('Find Match Trash:'+JSON.stringify(trash_data));
                 return responseBuilder
                     .speak(textCreator.getDayFromTrashTypeMessage(slotValue, trash_data))
                     .getResponse();
+            }
+        } 
+        // ユーザーの発話がスロット以外 または 合致するデータが登録情報に無かった場合はAPIでのテキスト比較を実施する
+        logger.debug('No match resolutions:'+JSON.stringify(requestEnvelope));
+
+        // ユーザーが発話したゴミ
+        const speeched_trash = requestEnvelope.request.intent.slots.TrashTypeSlot.value;
+        logger.debug('check freetext trash:' + speeched_trash);
+        return Promise.all([init_ready, get_trash_ready]).then(results=>{
+            const trash_result = results[1];
+            // データ取得でエラー
+            if (trash_result.status === 'error') {
+                return responseBuilder
+                    .speak(textCreator[trash_result.msgId])
+                    .withShouldEndSession(true)
+                    .getResponse();
+            }
+            // 登録タイプotherのみが比較対象になる
+            const compare_list = [];
+            trash_result.response.forEach(trash=>{
+                if(trash.type === 'other') {
+                    compare_list.push(
+                        Client.compareTwoText(speeched_trash,trash.trash_val)
+                    );
+                }
             });
-        } else {
-            const speechOut = textCreator.ask_trash_type;
-            return responseBuilder.speak(speechOut).reprompt(speechOut).getResponse();
-        }
+            if(compare_list.length === 0) {
+                const speechOut = textCreator.ask_trash_type;
+                return responseBuilder.speak(speechOut).reprompt(speechOut).getResponse();
+            }
+            return Promise.all(compare_list).then(results=>{
+                logger.debug('compare result:'+JSON.stringify(results));
+                const max_score = Math.max(...results);
+                let trash_data = [];
+                if(max_score >= 0.7) {
+                    const index = results.indexOf(max_score);
+                    trash_data = client.getDayFromTrashType([trash_result.response[index]], 'other', );
+                }
+                return responseBuilder
+                    .speak(textCreator.getDayFromTrashTypeMessage({id: 'other', name: speeched_trash}, trash_data))
+                    .getResponse();
+            }).catch(() => {
+                return responseBuilder.speak(textCreator.unknown_error).withShouldEndSession(true).getResponse();
+            });
+        });
    }
 };
 
