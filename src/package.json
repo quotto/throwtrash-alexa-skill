@@ -18,7 +18,7 @@
     "request-promise": "^4.2.4"
   },
   "devDependencies": {
-    "ask-cli": "^1.7.15",
+    "ask-cli": "^1.7.17",
     "eslint": "^6.5.1",
     "lint": "^1.1.2",
     "mocha": "^6.2.1",

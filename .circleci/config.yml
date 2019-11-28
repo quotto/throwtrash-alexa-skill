@@ -25,7 +25,6 @@ jobs:
       - run:
           name: test
           command: |
-            npm install -g ask-cli
             mkdir -p ~/.ask
             echo "${ASK_CLI_CONFIG}" > ~/.ask/cli_config
             echo `ask api get-model -s ${APPID} --stage development -l ja-JP` | jq '.' > test/model.json
