@@ -7,7 +7,7 @@ Parameters:
   STAGE:
     Type: "String"
     Default: "PRODUCTION"
-  MecabApi_URL:
+  APIURL:
     Type: "String"
 Resources:
   LambdaExecPolicy:
@@ -102,7 +102,7 @@ Resources:
           APP_REGION: !Sub "${AWS::Region}"
           APP_ID: !Ref APPID
           STAGE: !Ref STAGE
-          MecabAPI_URL: !Ref MecabAPI_URL
+          MecabAPI_URL: !Ref APIURL
     DeletionPolicy: Retain
   LambdaEvent:
     Type: "AWS::Lambda::Permission"
