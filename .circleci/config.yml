@@ -46,13 +46,13 @@ jobs:
           command: | 
             if [ "${CIRCLE_BRANCH}" == "master"]; then
               STAGE="PRODUCTION"
-              MecabAPI_URL=${MecabAPI_URL}/production
+              APIURL=${MecabAPI_URL}/production
             else
               STAGE="TEST"
-              MecabAPI_URL=${MecabAPI_URL}/test
+              APIURL=${MecabAPI_URL}/test
             fi
             aws cloudformation package --s3-bucket my-lambda-function-deployment --template-file template.yml --output-template-file packaged-template.yml
-            aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID=${APPID} STAGE=${STAGE} MecabAPI_URL=${MecabAPI_URL} --role-arn ${CloudFormationRole}
+            aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID=${APPID} STAGE=${STAGE} APIURL=${APIURL} --role-arn ${CloudFormationRole}
           working_directory: deploy
 
 workflows:
