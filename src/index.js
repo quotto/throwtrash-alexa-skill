@@ -359,7 +359,7 @@ const GetDayFromTrashTypeIntent = {
                     const index = compare_result.indexOf(max_score);
                     trash_data = client.getDayFromTrashType([trash_result.response[index]],'other');
                 }
-            } catch {
+            } catch(error) {
                 return responseBuilder.speak(textCreator.unknown_error).withShouldEndSession(true).getResponse();
             }
         }
