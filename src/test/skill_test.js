@@ -13,7 +13,7 @@ const Client = require('../client.js');
 const sinon = require('sinon');
 
 // デバッガログの出力設定
-process.env.LEVEL = 'TEST';
+process.env.STAGE = 'TEST';
 
 describe('Launch',()=>{
     before(()=>{
@@ -56,25 +56,26 @@ describe('GetDayFromTrashes',()=>{
              status: 'success',
             response: [
                 {type: 'other', trash_val: '不燃ごみ',schedules:[{type: 'weekday', value: '2'}]},
-                {type: 'other', trash_val: '空き缶',schedules:[{type: 'weekday', value: '4'}]},
+                {type: 'other', trash_val: 'ビンとペットボトル',schedules:[{type: 'weekday', value: '4'}]},
             ]
         });
         client_stub.withArgs('testdata4').returns({
              status: 'success',
-            response: [{type: 'burn', trash_val: '燃えるゴミ',schedules:[{type: 'weekday', value: '2'}]}]
+            response: [{type: 'burn', schedules:[{type: 'weekday', value: '2'}]}]
         });
     });
-    it('一致：登録情報がotherで発話もother',async()=>{
+    it('一致：登録情報がotherで発話が標準スロット外',async()=>{
         const request = alexa.request().intent('GetDayFromTrashType')
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata')
                             .set('request.intent.slots.TrashTypeSlot',
                                     {
                                         resolutions: {resolutionsPerAuthority:[{status:{code: 'NO_MATCH'}}]},
-                                        value: '野菜ジュース'
+                                        value: '野菜のジュース'
                                     }
                                 );
         const response = await request.send();
+        // レスポンスは一致した登録データのtrash_val
         assert.equal(response.prompt(), '<speak>次に野菜ジュースを出せるのは4月9日 火曜日です。</speak>');
     });
     it('不一致：登録情報がotherで発話もother（スコアが低い）',async()=>{
@@ -88,9 +89,10 @@ describe('GetDayFromTrashes',()=>{
                                     }
                                 );
         const response = await request.send();
+        // レスポンスは発話したゴミの名前
         assert.equal(response.prompt(), '<speak>データ上には存在しないゴミはごみ出し予定に登録されていません。</speak>');
     });
-    it('一致：登録情報がotherで発話がother以外',async()=>{
+    it('一致：登録情報がotherで発話が標準スロット',async()=>{
         const request = alexa.request().intent('GetDayFromTrashType')
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata2')
@@ -101,9 +103,10 @@ describe('GetDayFromTrashes',()=>{
                                     }
                                 );
         const response = await request.send();
-        assert.equal(response.prompt(), '<speak>次に不燃ゴミを出せるのは4月9日 火曜日です。</speak>');
+        // レスポンスは登録データotherのtrash_val
+        assert.equal(response.prompt(), '<speak>次に不燃ごみを出せるのは4月9日 火曜日です。</speak>');
     });
-    it('不一致：登録情報がotherで発話がother以外（スコアが低い）',async()=>{
+    it('不一致：登録情報がotherで発話がスロット外（スコアが低い）',async()=>{
         const request = alexa.request().intent('GetDayFromTrashType')
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata2')
@@ -114,22 +117,24 @@ describe('GetDayFromTrashes',()=>{
                                     }
                                 );
         const response = await request.send();
+        // レスポンスは発話したゴミの名前
         assert.equal(response.prompt(), '<speak>空き缶はごみ出し予定に登録されていません。</speak>');
     });
-    it('一致：登録情報が複数のotherで発話がother',async()=>{
+    it('一致：登録情報が複数のotherで発話が標準スロット外',async()=>{
         const request = alexa.request().intent('GetDayFromTrashType')
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata3')
                             .set('request.intent.slots.TrashTypeSlot',
                                     {
                                         resolutions: {resolutionsPerAuthority:[{status:{code: 'NO_MATCH'}}]},
-                                        value: '空き缶'
+                                        value: 'ペットボトル'
                                     }
                                 );
         const response = await request.send();
-        assert.equal(response.prompt(), '<speak>次に空き缶を出せるのは4月4日 木曜日です。</speak>');
+        // レスポンスは登録データで最も一致率が高かったデータのtrash_val
+        assert.equal(response.prompt(), '<speak>次にビンとペットボトルを出せるのは4月4日 木曜日です。</speak>');
     });
-    it('一致：登録情報がother以外で発話がother以外',async()=>{
+    it('一致：登録情報がother以外で発話が標準スロット',async()=>{
         const request = alexa.request().intent('GetDayFromTrashType')
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata4')
@@ -140,10 +145,40 @@ describe('GetDayFromTrashes',()=>{
                                     }
                                 );
         const response = await request.send();
+        // レスポンスは登録データのtypeにもとづく標準名称
         assert.equal(response.prompt(), '<speak>次に燃えるゴミを出せるのは4月9日 火曜日です。</speak>');
     });
+    it('一致：登録情報がother以外で発話がスロット外r',async()=>{
+        const request = alexa.request().intent('GetDayFromTrashType')
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata4')
+                            .set('request.intent.slots.TrashTypeSlot',
+                                {
+                                    resolutions: {resolutionsPerAuthority:[{status:{code: 'NO_MATCH'}}]},
+                                    value: '燃えるゴミ'
+                                }
+                            );
+        const response = await request.send();
+        // レスポンスは登録情報なし
+        assert.equal(response.prompt(), '<speak>燃えるゴミはごみ出し予定に登録されていません。</speak>');
+    });
+    it('一致：登録情報がotherで発話がother',async()=>{
+        const request = alexa.request().intent('GetDayFromTrashType')
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata3')
+                            .set('request.intent.slots.TrashTypeSlot',
+                                {
+                                    resolutions: {resolutionsPerAuthority:[{status:{code: 'ER_SUCCESS_MATCH'},values:[{value: {id: 'other', name: 'その他のゴミ'}}]}]},
+                                    value: 'その他のゴミ'
+                                }
+                            );
+        const response = await request.send();
+        // レスポンスは登録情報なし
+        assert.equal(response.prompt(), '<speak>次に不燃ごみを出せるのは4月9日 火曜日、ビンとペットボトルを出せるのは4月4日 木曜日です。</speak>');
+    });
+
     it('APIエラー',async ()=>{
-        const before_url = process.env.MecabApi_URL;
+        const before_url = process.env.MecabAPI_URL;
         const request = alexa.request().intent('GetDayFromTrashType')
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata')
@@ -154,12 +189,12 @@ describe('GetDayFromTrashes',()=>{
                                     }
                                 );
         try {
-            process.env.MecabApi_URL = '';
+            process.env.MecabAPI_URL = '';
             const response = await request.send();
             assert.equal(response.prompt(), `<speak>${jp_message.error.unknown}</speak>`);
         } finally {
             // eslint-disable-next-line require-atomic-updates
-            process.env.MecabApi_URL = before_url;
+            process.env.MecabAPI_URL = before_url;
         }
     })
     after(()=>{

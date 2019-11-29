@@ -262,7 +262,7 @@ class Client {
     * 指定したごみの種類から直近のゴミ捨て日を求める。
     * trashesの中に同一のゴミ（typeが同じ）があれば一つにまとめる。ただしtypeがotherの場合のみゴミの名前（trash_val）で区別するため、戻り値のkeyは複数になる可能性がある。
     * @param {Array} trashes DynamoDBから取得した登録済みごみ出し予定
-    * @param {Array} target_type 検索するゴミの種類
+    * @param {string}} target_type 検索するゴミの種類
     * @returns {object} target_typeで指定されたゴミの直近の予定日プロパティ。{key:ゴミの種類,schedules:登録されているごみ出し予定,list:登録スケジュールから算出した直近の予定日,recent: listの中で最も近い日}
     */
     getDayFromTrashType(trashes,target_type) {
@@ -338,7 +338,7 @@ class Client {
                 },
                 json: true
             };
-            logger.debug('Compare option:'+JSON.stringify(option));
+            logger.info('Compare option:'+JSON.stringify(option));
             return rp(option).then(response => {
                 return response.score;
             }).catch(err => {
