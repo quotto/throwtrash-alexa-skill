@@ -102,6 +102,7 @@ const LaunchRequestHandler = {
         return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
     },
     async handle(handlerInput){
+        logger.debug(JSON.stringify(handlerInput));
         const {requestEnvelope, responseBuilder} = handlerInput;
         const init_ready = init(handlerInput, {client: true, display: true});
         const accessToken = requestEnvelope.session.user.accessToken;
