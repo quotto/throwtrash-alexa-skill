@@ -85,7 +85,10 @@ Resources:
             ProjectionType: "INCLUDE"
       StreamSpecification:
         StreamViewType: "NEW_IMAGE"
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
       TableName: "TrashSchedule"
+    DeletionPolicy: Retain
   ThrowTrashSkill:
     Type: "AWS::Serverless::Function"
     Properties:
