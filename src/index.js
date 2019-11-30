@@ -342,26 +342,28 @@ const GetDayFromTrashTypeIntent = {
         const speeched_trash = requestEnvelope.request.intent.slots.TrashTypeSlot.value;
         logger.debug('check freetext trash:' + speeched_trash);
         // 登録タイプotherのみを比較対象とする
-        const compare_list = [];
-        trash_result.response.forEach(trash=>{
-            if(trash.type === 'other') {
-                compare_list.push(
-                    Client.compareTwoText(speeched_trash,trash.trash_val)
-                );
-            }
+        const other_trashes = trash_result.response.filter((value)=>{
+            return value.type === 'other'
         });
 
         let trash_data = [];
 
         // otherタイプの登録があれば比較する
-        if(compare_list.length > 0) {
+        if(other_trashes.length > 0) {
+            const compare_list = [];
+            other_trashes.forEach(trash=>{
+                compare_list.push(
+                    Client.compareTwoText(speeched_trash,trash.trash_val)
+                );
+            });
+
             try {
                 const compare_result = await Promise.all(compare_list);
                 logger.info('compare result:'+JSON.stringify(compare_result));
                 const max_score = Math.max(...compare_result);
                 if(max_score >= 0.7) {
                     const index = compare_result.indexOf(max_score);
-                    trash_data = client.getDayFromTrashType([trash_result.response[index]],'other');
+                    trash_data = client.getDayFromTrashType([other_trashes[index]],'other');
                 }
             } catch(error) {
                 return responseBuilder.speak(textCreator.unknown_error).withShouldEndSession(true).getResponse();

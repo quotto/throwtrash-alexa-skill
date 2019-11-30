@@ -63,6 +63,7 @@ describe('GetDayFromTrashes',()=>{
         client_stub.withArgs('testdata3').returns({
              status: 'success',
             response: [
+                {type: 'burn',schedules:[{type: 'weekday', value:'3'}]},
                 {type: 'other', trash_val: '不燃ごみ',schedules:[{type: 'weekday', value: '2'}]},
                 {type: 'other', trash_val: 'ビンとペットボトル',schedules:[{type: 'weekday', value: '4'}]},
             ]
