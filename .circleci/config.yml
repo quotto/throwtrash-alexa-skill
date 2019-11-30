@@ -53,7 +53,7 @@ jobs:
               APIURL=${MecabAPI_URL}/test
               AWS_DEFAULT_REGION=${TEST_REGION}
             fi
-            aws cloudformation package --s3-bucket lamba-function-deployment-${AWS_DEFAULT_REGION} --s3-prefix throwtrashskill --template-file template.yml --output-template-file packaged-template.yml
+            aws cloudformation package --s3-bucket lambda-function-deployment-${AWS_DEFAULT_REGION} --s3-prefix throwtrashskill --template-file template.yml --output-template-file packaged-template.yml
             aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID=${APPID} STAGE=${STAGE} APIURL=${APIURL} --role-arn ${CloudFormationRole} --capabilities CAPABILITY_NAMED_IAM --region
           working_directory: deploy
 
