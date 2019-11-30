@@ -162,10 +162,13 @@ const LaunchRequestHandler = {
                         }).getResponse();
                 }
             }
-            return responseBuilder
-                .speak(textCreator.getLaunchResponse(first) + reprompt_message)
-                .reprompt(reprompt_message)
-                .getResponse();
+            const metadata = handlerInput.requestEnvelope.request.metadata;
+            if(metadata && metadata.referrer === 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler') {
+                responseBuilder.speak(textCreator.getLaunchResponse(first)).withShouldEndSession(true);
+            } else {
+                responseBuilder.speak(textCreator.getLaunchResponse(first) + reprompt_message).reprompt(reprompt_message);
+            }
+            return responseBuilder.getResponse();
         });
     }
 };

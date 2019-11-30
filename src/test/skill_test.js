@@ -35,6 +35,14 @@ describe('Launch',()=>{
         const response = await request.send();
         assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。他に知りたい日にち、あるいはゴミの種類を言ってください。</speak>`);
     });
+    it('Launch via RegularAction', async()=>{
+        const request = alexa.request().launch()
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata')
+                            .set('request.metadata.referrer', 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler');
+        const response = await request.send();
+        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
+    })
     after(()=>{
         sinon.restore();
     })
