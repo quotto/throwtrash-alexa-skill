@@ -47,11 +47,13 @@ jobs:
             if [ "${CIRCLE_BRANCH}" == "master"]; then
               STAGE="PRODUCTION"
               APIURL=${MecabAPI_URL}/production
+              BUCKET=lambda-function-deployment-${PRODUCTION_REGION}
             else
               STAGE="TEST"
               APIURL=${MecabAPI_URL}/test
+              BUCKET=lambda-function-deployment-${TEST_REGION}
             fi
-            aws cloudformation package --s3-bucket my-lambda-function-deployment --template-file template.yml --output-template-file packaged-template.yml
+            aws cloudformation package --s3-bucket ${BUCKET} --s3-prefix throwtrashskill --template-file template.yml --output-template-file packaged-template.yml
             aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID=${APPID} STAGE=${STAGE} APIURL=${APIURL} --role-arn ${CloudFormationRole} --capabilities CAPABILITY_NAMED_IAM
           working_directory: deploy
 
