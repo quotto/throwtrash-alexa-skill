@@ -44,7 +44,7 @@ jobs:
             - npm-deps-
       - deploy: 
           command: | 
-            if [ "${CIRCLE_BRANCH}" == "master"]; then
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
               STAGE="PRODUCTION"
               APIURL=${MecabAPI_URL}/production
               AWS_DEFAULT_REGION=${PRODUCTION_REGION}
