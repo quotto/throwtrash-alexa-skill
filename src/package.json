@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha test",
+    "test": "ask api get-model -s ${APPID} --stage development -l ja-JP | jq '.' > test/model.json;mocha test ",
     "deploy": "python ../deploy/deploy.py"
   },
   "author": "",
@@ -18,12 +18,12 @@
     "request-promise": "^4.2.4"
   },
   "devDependencies": {
-    "ask-cli": "^1.7.15",
-    "aws-lambda-local-deployer": "^1.0.6",
     "eslint": "^6.5.1",
     "lint": "^1.1.2",
     "mocha": "^6.2.1",
+    "mock-require": "^3.0.3",
     "rewire": "^4.0.1",
-    "sinon": "^7.5.0"
+    "sinon": "^7.5.0",
+    "virtual-alexa": "^0.7.2"
   }
 }

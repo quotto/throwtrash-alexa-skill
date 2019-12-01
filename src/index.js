@@ -1,10 +1,13 @@
 'use strict';
 const Alexa = require('ask-sdk');
 const { DynamoDbPersistenceAdapter } = require('ask-sdk-dynamodb-persistence-adapter');
-const Client = require('client.js');
+const Client = require('./client.js');
 const TextCreator = require('./common/text-creator');
 const DisplayCreator = require('./common/display-creator');
 let textCreator, displayCreator, client;
+
+const logger = require('./logger');
+logger.LEVEL = process.env.STAGE && process.env.STAGE === "TEST" ? logger.DEBUG : logger.INFO;
 
 const PointDayValue = [
     {value:0},
@@ -36,7 +39,7 @@ const init = async (handlerInput,option)=>{
         return (deviceId ? 
             upsServiceClient.getSystemTimeZone(deviceId) : new Promise(resolve => { resolve('Asia/Tokyo') })
         ).then(timezone=>{
-            console.log('timezone:', timezone);
+            logger.debug('timezone:'+timezone);
             return client = new Client(timezone, textCreator); 
         });
     } else {
@@ -59,10 +62,10 @@ const updateUserHistory = (handlerInput)=> {
         handlerInput.attributesManager.setPersistentAttributes(attributes);
         return handlerInput.attributesManager.savePersistentAttributes();
     }).then(()=>{
-        console.log('user count up', get_schedule_count);
+        logger.info('user count up', get_schedule_count);
         return get_schedule_count;
     }).catch(err=>{
-        console.log(err);
+        logger.error(err);
         return 0;
     })
 };
@@ -99,6 +102,7 @@ const LaunchRequestHandler = {
         return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
     },
     async handle(handlerInput){
+        logger.debug(JSON.stringify(handlerInput));
         const {requestEnvelope, responseBuilder} = handlerInput;
         const init_ready = init(handlerInput, {client: true, display: true});
         const accessToken = requestEnvelope.session.user.accessToken;
@@ -119,10 +123,15 @@ const LaunchRequestHandler = {
                     .withShouldEndSession(true)
                     .getResponse();
             }
-
-            const first = client.checkEnableTrashes(data.response, 0);
-            const second = client.checkEnableTrashes(data.response, 1);
-            const third = client.checkEnableTrashes(data.response, 2);
+            const promise_list = [
+                client.checkEnableTrashes(data.response, 0),
+                client.checkEnableTrashes(data.response, 1),
+                client.checkEnableTrashes(data.response, 2)
+            ];
+            const all = await Promise.all(promise_list);
+            const first = all[0];
+            const second = all[1];
+            const third = all[2] ;
 
             const reprompt_message = textCreator.launch_reprompt;
             if (requestEnvelope.context.System.device.supportedInterfaces.Display) {
@@ -153,10 +162,13 @@ const LaunchRequestHandler = {
                         }).getResponse();
                 }
             }
-            return responseBuilder
-                .speak(textCreator.getLaunchResponse(first) + reprompt_message)
-                .reprompt(reprompt_message)
-                .getResponse();
+            const metadata = handlerInput.requestEnvelope.request.metadata;
+            if(metadata && metadata.referrer === 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler') {
+                responseBuilder.speak(textCreator.getLaunchResponse(first)).withShouldEndSession(true);
+            } else {
+                responseBuilder.speak(textCreator.getLaunchResponse(first) + reprompt_message).reprompt(reprompt_message);
+            }
+            return responseBuilder.getResponse();
         });
     }
 };
@@ -199,9 +211,15 @@ const GetPointDayTrashesHandler = {
                     target_day = client.getTargetDayByWeekday(PointDayValue[slotValue].weekday);
                 }
 
-                const first = client.checkEnableTrashes(trash_result.response, target_day);
-                const second = client.checkEnableTrashes(trash_result.response, target_day + 1);
-                const third = client.checkEnableTrashes(trash_result.response, target_day + 2);
+                const promise_list = [
+                    client.checkEnableTrashes(trash_result.response, target_day),
+                    client.checkEnableTrashes(trash_result.response, target_day + 1),
+                    client.checkEnableTrashes(trash_result.response, target_day + 2)
+                ];
+                const all = await Promise.all(promise_list);
+                const first = all[0];
+                const second = all[1];
+                const third = all[2];
                 responseBuilder.speak(textCreator.getPointdayResponse(slotValue, first));
                 if (requestEnvelope.context.System.device.supportedInterfaces.Display) {
                     const schedule_directive = displayCreator.getThrowTrashesDirective(target_day, [
@@ -276,6 +294,8 @@ const GetRegisteredContent = {
             const card_text = textCreator.getRegisterdContentForCard(schedule_data);
 
             return responseBuilder.speak(textCreator.all_schedule).withSimpleCard(textCreator.registerd_card_title, card_text).getResponse();
+        }).catch(()=>{
+            return responseBuilder.speak(textCreator.general_error).withShouldEndSession(true).getResponse();
         });
     }
 };
@@ -296,28 +316,63 @@ const GetDayFromTrashTypeIntent = {
                 .getResponse();
         }
         const resolutions = requestEnvelope.request.intent.slots.TrashTypeSlot.resolutions;
+        const get_trash_ready = Client.getTrashData(accessToken);
+        const result = await  Promise.all([init_ready, get_trash_ready]);
+        const trash_result = result[1];
+        if (trash_result.status === 'error') {
+            return responseBuilder
+                .speak(textCreator[trash_result.msgId])
+                .withShouldEndSession(true)
+                .getResponse();
+        }
         if(resolutions && resolutions.resolutionsPerAuthority[0].status.code === 'ER_SUCCESS_MATCH') {
-            const slotValue =resolutions.resolutionsPerAuthority[0].values[0].value;
-
-            const get_trash_ready = Client.getTrashData(accessToken);
-            return Promise.all([init_ready, get_trash_ready]).then(results=>{
-                const trash_result = results[1];
-                if (trash_result.status === 'error') {
-                    return responseBuilder
-                        .speak(textCreator[trash_result.msgId])
-                        .withShouldEndSession(true)
-                        .getResponse();
-                }
-                const trash_data = client.getDayFromTrashType(trash_result.response, slotValue.id);
+            const slotValue = resolutions.resolutionsPerAuthority[0].values[0].value;
+            const trash_data = client.getDayFromTrashType(trash_result.response, slotValue.id);
+            if(Object.keys(trash_data).length > 0) {
+                logger.debug('Find Match Trash:'+JSON.stringify(trash_data));
                 return responseBuilder
                     .speak(textCreator.getDayFromTrashTypeMessage(slotValue, trash_data))
                     .getResponse();
+            }
+        } 
+        // ユーザーの発話がスロット以外 または 合致するデータが登録情報に無かった場合はAPIでのテキスト比較を実施する
+        logger.debug('Not match resolutions:'+JSON.stringify(requestEnvelope));
+
+        // ユーザーが発話したゴミ
+        const speeched_trash = requestEnvelope.request.intent.slots.TrashTypeSlot.value;
+        logger.debug('check freetext trash:' + speeched_trash);
+        // 登録タイプotherのみを比較対象とする
+        const other_trashes = trash_result.response.filter((value)=>{
+            return value.type === 'other'
+        });
+
+        let trash_data = [];
+
+        // otherタイプの登録があれば比較する
+        if(other_trashes.length > 0) {
+            const compare_list = [];
+            other_trashes.forEach(trash=>{
+                compare_list.push(
+                    Client.compareTwoText(speeched_trash,trash.trash_val)
+                );
             });
-        } else {
-            const speechOut = textCreator.ask_trash_type;
-            return responseBuilder.speak(speechOut).reprompt(speechOut).getResponse();
+
+            try {
+                const compare_result = await Promise.all(compare_list);
+                logger.info('compare result:'+JSON.stringify(compare_result));
+                const max_score = Math.max(...compare_result);
+                if(max_score >= 0.7) {
+                    const index = compare_result.indexOf(max_score);
+                    trash_data = client.getDayFromTrashType([other_trashes[index]],'other');
+                }
+            } catch(error) {
+                return responseBuilder.speak(textCreator.unknown_error).withShouldEndSession(true).getResponse();
+            }
         }
-   }
+        return responseBuilder
+            .speak(textCreator.getDayFromTrashTypeMessage({id: 'other', name: speeched_trash}, trash_data))
+            .getResponse();
+    }
 };
 
 const CheckReminderHandler = {
@@ -329,15 +384,15 @@ const CheckReminderHandler = {
     },
     async handle(handlerInput) {
         const {responseBuilder, requestEnvelope} = handlerInput;
-        // const consentToken = requestEnvelope.context.System.user.permissions
-        //     && requestEnvelope.context.System.user.permissions.consentToken;
-        // if (!consentToken) {
-        //     // リマインダーのパーミッションが許可されていない場合は許可を促す
-        //     return responseBuilder
-        //         .speak(textCreator.require_reminder_permission)
-        //         .withAskForPermissionsConsentCard(['alexa::alerts:reminders:skill:readwrite'])
-        //         .getResponse();
-        // }
+        const consentToken = requestEnvelope.context.System.user.permissions
+            && requestEnvelope.context.System.user.permissions.consentToken;
+        if (!consentToken) {
+            // リマインダーのパーミッションが許可されていない場合は許可を促す
+            return responseBuilder
+                .speak(textCreator.require_reminder_permission)
+                .withAskForPermissionsConsentCard(['alexa::alerts:reminders:skill:readwrite'])
+                .getResponse();
+        }
 
         const accessToken = requestEnvelope.session.user.accessToken;
         if (!accessToken) {
@@ -394,7 +449,7 @@ const SetReminderHandler = {
         const accessToken = requestEnvelope.session.user.accessToken;
         const get_trash_ready = Client.getTrashData(accessToken);
         if(requestEnvelope.request.intent.confirmationStatus === 'CONFIRMED') {
-            return Promise.all([init_ready, get_trash_ready]).then(results => {
+            return Promise.all([init_ready, get_trash_ready]).then(async(results) => {
                 if (results[1].status === 'error') {
                     return responseBuilder
                         .speak(textCreator[results[1].msgId])
@@ -403,7 +458,7 @@ const SetReminderHandler = {
                 }
                 const weekTypeSlot = requestEnvelope.request.intent.slots.WeekTypeSlot.resolutions.resolutionsPerAuthority[0].values[0].value;
                 const time = requestEnvelope.request.intent.slots.TimerSlot.value;
-                const remind_data = client.getRemindBody(Number(weekTypeSlot.id), results[1].response);
+                const remind_data = await client.getRemindBody(Number(weekTypeSlot.id), results[1].response);
                 const remind_requests = createRemindRequest(remind_data, time, textCreator.locale);
 
                 const ReminderManagementServiceClient = serviceClientFactory.getReminderManagementServiceClient();
@@ -411,7 +466,8 @@ const SetReminderHandler = {
                 remind_requests.forEach((request_body) => {
                     remind_list.push(
                         ReminderManagementServiceClient.createReminder(request_body).then(data => {
-                            console.log(data);
+                            logger.info('CreateReminder:');
+                            logger.info(data);
                         })
                     );
                 });
@@ -421,7 +477,7 @@ const SetReminderHandler = {
                         .withShouldEndSession(true)
                         .getResponse();
                 }).catch((err)=>{
-                    console.log(err);
+                    logger.error(err);
                     // ReminderManagementServiceClientでは権限が許可されていない場合401エラーが返る
                     if(err.statusCode === 401 || err.statuScode === 403) {
                         return responseBuilder

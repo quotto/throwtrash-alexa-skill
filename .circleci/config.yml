@@ -5,7 +5,7 @@ orbs:
 jobs:
   setup:
     docker:
-      - image: circleci/node:8.9
+      - image: circleci/node:10.12
     working_directory: ~/checkout
     steps:
       - checkout
@@ -24,7 +24,12 @@ jobs:
             - src/node_modules
       - run:
           name: test
-          command: npm test
+          command: |
+            sudo npm install -g ask-cli
+            mkdir -p ~/.ask
+            MecabAPI_URL=${MecabAPI_URL}/test
+            echo "${ASK_CLI_CONFIG}" > ~/.ask/cli_config
+            npm test
           working_directory: src
   deploy:
     executor: aws-cli/default
@@ -39,8 +44,17 @@ jobs:
             - npm-deps-
       - deploy: 
           command: | 
-            aws cloudformation package --s3-bucket my-lambda-function-deployment --template-file template.yml --output-template-file packaged-template.yml
-            aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID=${APPID}
+            if [ "${CIRCLE_BRANCH}" == "master"]; then
+              STAGE="PRODUCTION"
+              APIURL=${MecabAPI_URL}/production
+              AWS_DEFAULT_REGION=${PRODUCTION_REGION}
+            else
+              STAGE="TEST"
+              APIURL=${MecabAPI_URL}/test
+              AWS_DEFAULT_REGION=${TEST_REGION}
+            fi
+            aws cloudformation package --s3-bucket lambda-function-deployment-${AWS_DEFAULT_REGION} --s3-prefix throwtrashskill --template-file template.yml --output-template-file packaged-template.yml
+            aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID=${APPID} STAGE=${STAGE} APIURL=${APIURL} --role-arn ${CloudFormationRole} --capabilities CAPABILITY_NAMED_IAM
           working_directory: deploy
 
 workflows:

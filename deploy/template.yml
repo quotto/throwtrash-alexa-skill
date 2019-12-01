@@ -3,22 +3,112 @@ Transform: AWS::Serverless-2016-10-31
 Description: The AWS CloudFormation template for BSE Workflow
 Parameters:
   APPID:
-    Type: 'String'
+    Type: "String"
+  STAGE:
+    Type: "String"
+    Default: "PRODUCTION"
+  APIURL:
+    Type: "String"
 Resources:
-  ThrowTrashSkill:
-    Type: 'AWS::Lambda::Function'
+  LambdaExecPolicy:
+    Type: "AWS::IAM::Policy"
     Properties:
-      Code: ../src
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action: "dynamodb:*"
+            Resource: 
+              - !GetAtt HistoryTable.Arn
+              - !GetAtt TrashScheduleTable.Arn
+          -
+            Effect: "Allow"
+            Action: "lambda:*"
+            Resource: 
+              - !GetAtt ThrowTrashSkill.Arn
+      PolicyName: !Sub "throwtrash-lambda-policy-${AWS::Region}"
+      Roles:
+        - !Ref LambdaExecRole
+    DeletionPolicy: Retain
+  LambdaExecRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      RoleName: !Sub "throwtrash-lambda-role-${AWS::Region}"
+    DeletionPolicy: Retain
+  HistoryTable:
+    Type: "AWS::Serverless::SimpleTable"
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: String
+      TableName: ThrowTrashHistory
+    DeletionPolicy: Retain
+  TrashScheduleTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      BillingMode: "PAY_PER_REQUEST"
+      AttributeDefinitions:
+        - 
+          AttributeName: "id"
+          AttributeType: "S"
+        - 
+          AttributeName: "signinId"
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: "id"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        -
+          IndexName: "signinId-index"
+          KeySchema:
+            - 
+              AttributeName: "signinId"
+              KeyType: "HASH"
+          Projection:
+            NonKeyAttributes:
+              - "description"
+              - "id"
+              - "signinService"
+            ProjectionType: "INCLUDE"
+      StreamSpecification:
+        StreamViewType: "NEW_IMAGE"
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      TableName: "TrashSchedule"
+    DeletionPolicy: Retain
+  ThrowTrashSkill:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri: ../src
       FunctionName: ThrowTrashSkill
       Handler: index.handler
-      Role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lambda_basic_execution'
-      Runtime: nodejs8.10
+      Role: !GetAtt LambdaExecRole.Arn
+      Runtime: nodejs10.x
       Timeout: 30
+      Environment:
+        Variables:
+          APP_REGION: !Sub "${AWS::Region}"
+          APP_ID: !Ref APPID
+          STAGE: !Ref STAGE
+          MecabAPI_URL: !Ref APIURL
     DeletionPolicy: Retain
   LambdaEvent:
-    Type: 'AWS::Lambda::Permission'
+    Type: "AWS::Lambda::Permission"
     Properties:
-      Action: 'lambda:InvokeFunction'
+      Action: "lambda:InvokeFunction"
       FunctionName: !Ref ThrowTrashSkill
-      Principal: 'alexa-appkit.amazon.com'
+      Principal: "alexa-appkit.amazon.com"
       EventSourceToken: !Ref APPID
