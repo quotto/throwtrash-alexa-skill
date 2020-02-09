@@ -34,9 +34,14 @@ const init = async (handlerInput,option)=>{
     }
     if(option.client) {
         const deviceId = requestEnvelope.context.System.device.deviceId;
-        const upsServiceClient = serviceClientFactory.getUpsServiceClient();
+        let upsServiceClient = null;
+        try {
+            upsServiceClient = serviceClientFactory.getUpsServiceClient();
+        } catch(e) {
+            logger.error(e)
+        }
         // タイムゾーン取得後にclientインスタンスを生成
-        return (deviceId ? 
+        return (deviceId && upsServiceClient ? 
             upsServiceClient.getSystemTimeZone(deviceId) : new Promise(resolve => { resolve('Asia/Tokyo') })
         ).then(timezone=>{
             logger.debug('timezone:'+timezone);
