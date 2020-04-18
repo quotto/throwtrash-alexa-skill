@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "ask api get-model -s ${APPID} --stage development -l ja-JP | jq '.' > test/model.json;mocha test ",
+    "test": "ask smapi get-interaction-model -s ${APPID} --stage development -l ja-JP | jq '.' > test/model.json;mocha test ",
     "deploy": "python ../deploy/deploy.py"
   },
   "author": "",
