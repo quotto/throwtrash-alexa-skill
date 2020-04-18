@@ -22,6 +22,7 @@ Resources:
             Resource: 
               - !GetAtt HistoryTable.Arn
               - !GetAtt TrashScheduleTable.Arn
+              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/throwtrash-backend-accesstoken"
           -
             Effect: "Allow"
             Action: "lambda:*"
