@@ -25,7 +25,7 @@ jobs:
       - run:
           name: test
           command: |
-            sudo npm install -g ask-cli
+            sudo npm install -g ask-cli --unsafe-perm
             mkdir -p ~/.ask
             MecabAPI_URL=${MecabAPI_URL}/test
             echo "${ASK_CLI_CONFIG}" > ~/.ask/cli_config
