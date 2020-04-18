@@ -1,10 +1,14 @@
 const assert = require('assert');
 const sinon = require('sinon');
 const rewire = require('rewire');
-const Client = rewire('../client.js');
-const TextCreator = require('../common/text-creator.js');
-const testData = require('./testdata.json');
 const rp = require('request-promise');
+const crypto = require("crypto");
+
+
+process.env.APP_REGION = "us-west-2";
+const Client = rewire('../client.js');
+const testData = require('./testdata.json');
+const TextCreator = require('../common/text-creator.js');
 const locale_list = ['ja-JP', 'en-US'];
 const localeText={}, commonText={}, displayText={};
 locale_list.forEach(locale=>{
@@ -593,19 +597,101 @@ describe('getRemindBody',()=>{
 });
 
 describe('getTrashData', function () {
+    const aws = require("aws-sdk");
+    const documentClient = new aws.DynamoDB.DocumentClient({region: "us-west-2"});
+    const access_token_001 = "aaaaaaaaaa";
+    const hash_001 = crypto.createHash("sha512").update(access_token_001).digest("hex");
+    const id_001 = "00b38bbe-8a0f-4afc-afa9-c00aaac1d1df";
+
+    const access_token_002 = "bbbbbbbbb";
+    const hash_002 = crypto.createHash("sha512").update(access_token_002).digest("hex");
+    before((done)=>{
+        documentClient.batchWrite({
+            RequestItems: {
+                "throwtrash-backend-accesstoken": [
+                    {
+                        PutRequest: {
+                            Item: {
+                                access_token:  hash_001,
+                                expire_in: Math.ceil(Date.now()/1000) + 5 * 60,
+                                user_id:  id_001
+                            }
+                        }
+                    },
+                    {
+                        PutRequest: {
+                            Item: {
+                                access_token:  hash_002,
+                                expire_in: Math.ceil(Date.now()/1000) + 5 * 60,
+                                user_id:  "id002"
+                            }
+                        }
+                    }
+                ],
+                "TrashSchedule": [
+                    {
+                        PutRequest: {
+                            Item: {
+                                id: id_001,
+                                description: JSON.stringify(testData.evweek)
+                            }
+                        }
+                    }
+                ]
+            }
+        }).promise().then(()=>done())
+    });
     it('正常データ', done=>{
-        Client.getTrashData('00b38bbe-8a0f-4afc-afa9-c00aaac1d1df').then(result=>{
+        Client.getTrashData(access_token_001).then(result=>{
             assert.equal(result.status, 'success');
             done();
         });
     });
-    it('未登録のuuid', function (done) {
-        Client.getTrashData('1439d8b1-b41e-45f9-9afc-ecdfdaea1d83', 0).then(result => {
+    it('存在しないID', function (done) {
+        Client.getTrashData(access_token_002).then(result => {
             assert.equal(result.status, 'error');
             assert.equal(result.msgId, 'id_not_found_error');
             done();
         });
     });
+    it('存在しないアクセストークン', function (done) {
+        Client.getTrashData('missing_access_token').then(result => {
+            assert.equal(result.status, 'error');
+            assert.equal(result.msgId, 'id_not_found_error');
+            done();
+        });
+    });
+    after((done)=>{
+        documentClient.batchWrite({
+            RequestItems: {
+                "throwtrash-backend-accesstoken": [
+                    {
+                        DeleteRequest: {
+                            Key: {
+                                access_token: hash_001
+                            }
+                        }
+                    },
+                    {
+                        DeleteRequest: {
+                            Key: {
+                                access_token: hash_002
+                            }
+                        }
+                    }
+                ],
+                "TrashSchedule": [
+                    {
+                        DeleteRequest: {
+                            Key: {
+                                id: id_001
+                            }
+                        }
+                    }
+                ]
+            }
+        }).promise().then(()=>done())
+    })
 });
 
 describe('compareTwoText',()=>{

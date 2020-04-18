@@ -236,7 +236,7 @@ const GetPointDayTrashesHandler = {
                 }
                 
                 const user_count = results[2];
-                if (textCreator.locale === 'ja-JP' && user_count % 3 === 0) {
+                if (textCreator.locale === 'ja-JP' && user_count % 5 === 0) {
                     const entitledProducts = await getEntitledProducts(handlerInput);
                     if (!entitledProducts || entitledProducts.length === 0) {
                         return responseBuilder.addDirective({

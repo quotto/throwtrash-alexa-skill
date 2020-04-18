@@ -9,6 +9,12 @@ const dynamoClient = new AWS.DynamoDB.DocumentClient({region: process.env.APP_RE
 
 const logger = require('./logger');
 logger.LEVEL = process.env.STAGE && process.env.STAGE === 'TEST' ? logger.DEBUG : logger.INFO;
+
+const crypto = require("crypto");
+
+const toHash = (value) => {
+    return crypto.createHash("sha512").update(value).digest("hex");
+}
 class Client {
     constructor(_timezone, _text_creator){
         this.timezone = _timezone || 'utc';
@@ -16,36 +22,47 @@ class Client {
     }
 
     /**
-    access_token: ユーザーを特定するためのuuid
+    access_token: アクセストークン
     target_day: 0:今日,1:明日
     **/
-    static getTrashData(access_token) {
-        const params = {
-            TableName: 'TrashSchedule',
+    static async getTrashData(access_token) {
+        const accessTokenOption = {
+            TableName: "throwtrash-backend-accesstoken",
             Key: {
-                id: access_token
+                access_token: toHash(access_token)
             }
-        };
-        return dynamoClient.get(params).promise().then(data=>{
-            if(typeof(data['Item'])==='undefined') {
-                logger.error(`User Not Found => ${access_token}`);
-                return {
-                        status:'error',
-                        msgId: 'id_not_found_error' 
+        }; 
+        try {
+            const tokenData = await dynamoClient.get(accessTokenOption).promise();
+            logger.debug(JSON.stringify(tokenData));
+            if (tokenData.Item) {
+                const params = {
+                    TableName: 'TrashSchedule',
+                    Key: {
+                        id: tokenData.Item.user_id
+                    }
                 };
-            } else {
-                return {
-                        status:'success',
-                        response:JSON.parse(data['Item']['description'])
-                };
+                const scheduleData = await dynamoClient.get(params).promise();
+                logger.debug(JSON.stringify(scheduleData));
+                if (scheduleData.Item) {
+                    return {
+                        status: 'success',
+                        response: JSON.parse(scheduleData.Item.description)
+                    };
+                }
             }
-        }).catch(err=>{
+            logger.error(`User Not Found(AccessToken: ${access_token}`);
+            return {
+                status: 'error',
+                msgId: 'id_not_found_error'
+            };
+        } catch(err) {
             logger.error(err);
             return {
                     status:'error',
                     msgId: 'general_error'
             };
-        });
+        }
     }
 
     /**
