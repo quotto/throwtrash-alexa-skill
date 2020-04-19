@@ -51,7 +51,7 @@ class Client {
                     };
                 }
             }
-            logger.error(`User Not Found(AccessToken: ${access_token}`);
+            logger.error(`User Not Found(AccessToken: ${access_token})`);
             return {
                 status: 'error',
                 msgId: 'id_not_found_error'

@@ -1,6 +1,6 @@
 'use strict';
 const Alexa = require('ask-sdk');
-const { DynamoDbPersistenceAdapter } = require('ask-sdk-dynamodb-persistence-adapter');
+const {S3PersistenceAdapter} = require('ask-sdk-s3-persistence-adapter');
 const Client = require('./client.js');
 const TextCreator = require('./common/text-creator');
 const DisplayCreator = require('./common/display-creator');
@@ -23,7 +23,7 @@ const PointDayValue = [
 ];
 
 const ReminderProductId = 'amzn1.adg.product.53b195eb-738d-4696-baea-c17fdce1ebc7';
-const dynamoDbPersistenceAdapter = new DynamoDbPersistenceAdapter({tableName: 'ThrowTrashHistory', createTable: true});
+const persistenceAdapter = new S3PersistenceAdapter({bucketName: `throwtrash-user-history-${process.env.APP_REGION}`});
 
 const init = async (handlerInput,option)=>{
     const { requestEnvelope, serviceClientFactory } = handlerInput;
@@ -60,6 +60,17 @@ const getEntitledProducts = (handlerInput)=>{
     });
 };
 
+const getUserHistory = async(handlerInput) => {
+    return handlerInput.attributesManager.getPersistentAttributes().then(attributes=>{
+        logger.debug(`get_schedule_count: ${attributes.get_schedule_count}`);
+        return attributes.get_schedule_count ? attributes.get_schedule_count : 0
+    }).catch(err => {
+        logger.error("getPersistentAttributes Error:");
+        logger.error(err);
+        return 0;
+    });
+}
+
 const updateUserHistory = (handlerInput)=> {
     let get_schedule_count = 0;
     return handlerInput.attributesManager.getPersistentAttributes().then(attributes=>{
@@ -67,13 +78,34 @@ const updateUserHistory = (handlerInput)=> {
         handlerInput.attributesManager.setPersistentAttributes(attributes);
         return handlerInput.attributesManager.savePersistentAttributes();
     }).then(()=>{
-        logger.info('user count up', get_schedule_count);
         return get_schedule_count;
     }).catch(err=>{
         logger.error(err);
         return 0;
     })
 };
+
+const setUpSellMessage = async(handlerInput, responseBuilder,locale) => {
+    const user_count = await getUserHistory(handlerInput);
+    if (locale === 'ja-JP' && user_count % 5 === 0) {
+        const entitledProducts = await getEntitledProducts(handlerInput);
+        if (!entitledProducts || entitledProducts.length === 0) {
+            responseBuilder.addDirective({
+                type: "Connections.SendRequest",
+                name: "Upsell",
+                payload: {
+                    InSkillProduct: {
+                        productId: ReminderProductId
+                    },
+                    upsellMessage: '<break stength="strong"/>' + textCreator.upsell
+                },
+                token: "correlationToken",
+            });
+            return true;
+        }
+    }
+    return false;
+}
 
 let skill;
 exports.handler = async function(event,context) {
@@ -95,7 +127,7 @@ exports.handler = async function(event,context) {
                 NextPreviousIntentHandler
             )
             .withSkillId(process.env.APP_ID)
-            .withPersistenceAdapter(dynamoDbPersistenceAdapter)
+            .withPersistenceAdapter(persistenceAdapter)
             .withApiClient(new Alexa.DefaultApiClient())
             .create();
     }
@@ -119,8 +151,7 @@ const LaunchRequestHandler = {
                 .getResponse();
         }
         const get_trash_ready = Client.getTrashData(accessToken);
-        const update_history_ready = updateUserHistory(handlerInput)
-        return Promise.all([init_ready, get_trash_ready, update_history_ready]).then(async(results)=>{
+        return Promise.all([init_ready, get_trash_ready]).then(async(results)=>{
             const data = results[1];
             if (data.status === 'error') {
                 return responseBuilder
@@ -148,29 +179,11 @@ const LaunchRequestHandler = {
                 responseBuilder.addDirective(schedule_directive).withShouldEndSession(true);
             }
 
-            const user_count = results[2];
-            if (textCreator.locale === 'ja-JP' && user_count % 3 === 0) {
-                const entitledProducts = await getEntitledProducts(handlerInput);
-                if(!entitledProducts || entitledProducts.length === 0) {
-                    return responseBuilder
-                        .speak(textCreator.getLaunchResponse(first))
-                        .addDirective({
-                            type: "Connections.SendRequest",
-                            name: "Upsell",
-                            payload: {
-                                InSkillProduct: {
-                                    productId: ReminderProductId
-                                },
-                                upsellMessage: '<break stength="strong"/>' + textCreator.upsell
-                            },
-                            token: "correlationToken",
-                        }).getResponse();
-                }
-            }
             const metadata = handlerInput.requestEnvelope.request.metadata;
             if(metadata && metadata.referrer === 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler') {
                 responseBuilder.speak(textCreator.getLaunchResponse(first)).withShouldEndSession(true);
-            } else {
+            } else if(await setUpSellMessage(handlerInput, responseBuilder, textCreator.locale)) {
+                // アップセルを行わなければrepromptする
                 responseBuilder.speak(textCreator.getLaunchResponse(first) + reprompt_message).reprompt(reprompt_message);
             }
             return responseBuilder.getResponse();
@@ -199,8 +212,7 @@ const GetPointDayTrashesHandler = {
             const slotValue =requestEnvelope.request.intent.slots.DaySlot.resolutions.resolutionsPerAuthority[0].values[0].value.id;
 
             const get_trash_ready = Client.getTrashData(accessToken);
-            const update_history_ready = updateUserHistory(handlerInput);
-            return Promise.all([init_ready, get_trash_ready, update_history_ready]).then(async(results)=>{
+            return Promise.all([init_ready, get_trash_ready]).then(async(results)=>{
                 const trash_result = results[1];
                 if (trash_result.status === 'error') {
                     return responseBuilder
@@ -235,23 +247,7 @@ const GetPointDayTrashesHandler = {
                     responseBuilder.addDirective(schedule_directive).withShouldEndSession(true);
                 }
                 
-                const user_count = results[2];
-                if (textCreator.locale === 'ja-JP' && user_count % 5 === 0) {
-                    const entitledProducts = await getEntitledProducts(handlerInput);
-                    if (!entitledProducts || entitledProducts.length === 0) {
-                        return responseBuilder.addDirective({
-                            type: "Connections.SendRequest",
-                            name: "Upsell",
-                            payload: {
-                                InSkillProduct: {
-                                    productId: ReminderProductId
-                                },
-                                upsellMessage: '<break stength="strong"/>' + textCreator.upsell
-                            },
-                            token: "correlationToken",
-                        }).getResponse();
-                    }
-                }
+                await setUpSellMessage(handlerInput, responseBuilder, textCreator.locale);
                 return responseBuilder.getResponse();
             });
         } else {
@@ -335,9 +331,10 @@ const GetDayFromTrashTypeIntent = {
             const trash_data = client.getDayFromTrashType(trash_result.response, slotValue.id);
             if(Object.keys(trash_data).length > 0) {
                 logger.debug('Find Match Trash:'+JSON.stringify(trash_data));
-                return responseBuilder
+                responseBuilder
                     .speak(textCreator.getDayFromTrashTypeMessage(slotValue, trash_data))
-                    .getResponse();
+                await setUpSellMessage(handlerInput, responseBuilder, textCreator.locale);
+                return requestEnvelope.getResponse();
             }
         } 
         // ユーザーの発話がスロット以外 または 合致するデータが登録情報に無かった場合はAPIでのテキスト比較を実施する
@@ -374,9 +371,11 @@ const GetDayFromTrashTypeIntent = {
                 return responseBuilder.speak(textCreator.unknown_error).withShouldEndSession(true).getResponse();
             }
         }
-        return responseBuilder
-            .speak(textCreator.getDayFromTrashTypeMessage({id: 'other', name: speeched_trash}, trash_data))
-            .getResponse();
+        responseBuilder
+            .speak(textCreator.getDayFromTrashTypeMessage({id: 'other', name: speeched_trash}, trash_data));
+
+        await setUpSellMessage(handlerInput, responseBuilder, textCreator.locale);
+        return responseBuilder.getResponse();
     }
 };
 
@@ -633,7 +632,8 @@ const SessionEndedRequestHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest';
     },
-    handle(handlerInput) {
+    async handle(handlerInput) {
+        await updateUserHistory(handlerInput);
         return handlerInput.responseBuilder
             .withShouldEndSession(true)
             .getResponse();

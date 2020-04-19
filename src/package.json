@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "ask-sdk": "^2.8.0",
+    "ask-sdk-s3-persistence-adapter": "^2.8.0",
     "dateformat": "^3.0.3",
     "lodash": "^4.17.15",
     "moment-timezone": "^0.5.28",

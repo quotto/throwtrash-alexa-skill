@@ -20,7 +20,6 @@ Resources:
             Effect: "Allow"
             Action: "dynamodb:*"
             Resource: 
-              - !GetAtt HistoryTable.Arn
               - !GetAtt TrashScheduleTable.Arn
               - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/throwtrash-backend-accesstoken"
           -
@@ -28,6 +27,18 @@ Resources:
             Action: "lambda:*"
             Resource: 
               - !GetAtt ThrowTrashSkill.Arn
+          -
+            Effect: "Allow"
+            Action: 
+               - "s3:ListBucket"
+               - "s3:GetObject"
+               - "s3:PutObject"
+            Resource: 
+              - !GetAtt HistoryBucket.Arn
+              - !Sub 
+                - "${HistoryBucket}/*"
+                - {HistoryBucket: !GetAtt HistoryBucket.Arn}
+
       PolicyName: !Sub "throwtrash-lambda-policy-${AWS::Region}"
       Roles:
         - !Ref LambdaExecRole
@@ -48,13 +59,10 @@ Resources:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
       RoleName: !Sub "throwtrash-lambda-role-${AWS::Region}"
     DeletionPolicy: Retain
-  HistoryTable:
-    Type: "AWS::Serverless::SimpleTable"
+  HistoryBucket:
+    Type: "AWS::S3::Bucket"
     Properties:
-      PrimaryKey:
-        Name: id
-        Type: String
-      TableName: ThrowTrashHistory
+      BucketName: !Sub "throwtrash-user-history-${AWS::Region}"
     DeletionPolicy: Retain
   TrashScheduleTable:
     Type: "AWS::DynamoDB::Table"
