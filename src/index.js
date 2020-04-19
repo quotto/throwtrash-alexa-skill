@@ -61,13 +61,14 @@ const getEntitledProducts = (handlerInput)=>{
 };
 
 const getUserHistory = async(handlerInput) => {
+    // 初回呼び出しおよびエラーが発生した場合には0除算を避けるため1を返す
     return handlerInput.attributesManager.getPersistentAttributes().then(attributes=>{
         logger.debug(`get_schedule_count: ${attributes.get_schedule_count}`);
-        return attributes.get_schedule_count ? attributes.get_schedule_count : 0
+        return attributes.get_schedule_count ? attributes.get_schedule_count : 1
     }).catch(err => {
         logger.error("getPersistentAttributes Error:");
         logger.error(err);
-        return 0;
+        return 1;
     });
 }
 
@@ -85,9 +86,9 @@ const updateUserHistory = (handlerInput)=> {
     })
 };
 
-const setUpSellMessage = async(handlerInput, responseBuilder,locale) => {
+const setUpSellMessage = async(handlerInput, responseBuilder) => {
     const user_count = await getUserHistory(handlerInput);
-    if (locale === 'ja-JP' && user_count % 4 === 0) {
+    if (handlerInput.requestEnvelope.request.locale === 'ja-JP' && user_count % 4 === 0) {
         const entitledProducts = await getEntitledProducts(handlerInput);
         if (!entitledProducts || entitledProducts.length === 0) {
             responseBuilder.addDirective({
@@ -182,7 +183,7 @@ const LaunchRequestHandler = {
             const metadata = handlerInput.requestEnvelope.request.metadata;
             if(metadata && metadata.referrer === 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler') {
                 responseBuilder.speak(textCreator.getLaunchResponse(first)).withShouldEndSession(true);
-            } else if(await setUpSellMessage(handlerInput, responseBuilder, textCreator.locale)) {
+            } else if(!await setUpSellMessage(handlerInput, responseBuilder)) {
                 // アップセルを行わなければrepromptする
                 responseBuilder.speak(textCreator.getLaunchResponse(first) + reprompt_message).reprompt(reprompt_message);
             }
@@ -247,7 +248,7 @@ const GetPointDayTrashesHandler = {
                     responseBuilder.addDirective(schedule_directive).withShouldEndSession(true);
                 }
                 
-                await setUpSellMessage(handlerInput, responseBuilder, textCreator.locale);
+                await setUpSellMessage(handlerInput, responseBuilder);
                 return responseBuilder.getResponse();
             });
         } else {
@@ -333,7 +334,7 @@ const GetDayFromTrashTypeIntent = {
                 logger.debug('Find Match Trash:'+JSON.stringify(trash_data));
                 responseBuilder
                     .speak(textCreator.getDayFromTrashTypeMessage(slotValue, trash_data))
-                await setUpSellMessage(handlerInput, responseBuilder, textCreator.locale);
+                await setUpSellMessage(handlerInput, responseBuilder);
                 return requestEnvelope.getResponse();
             }
         } 
@@ -374,7 +375,7 @@ const GetDayFromTrashTypeIntent = {
         responseBuilder
             .speak(textCreator.getDayFromTrashTypeMessage({id: 'other', name: speeched_trash}, trash_data));
 
-        await setUpSellMessage(handlerInput, responseBuilder, textCreator.locale);
+        await setUpSellMessage(handlerInput, responseBuilder);
         return responseBuilder.getResponse();
     }
 };

@@ -1,4 +1,8 @@
 'use strict'
+// デバッガログの出力設定
+process.env.STAGE = 'TEST';
+process.env.APP_REGION = "us-west-2"
+
 const va = require('virtual-alexa');
 const model = require('./model.json');
 const handler = './index.js'; //テスト実行ディレクトリを基準とした相対パス
@@ -11,9 +15,6 @@ alexa.dynamoDB().mock();
 const assert = require('assert');
 const Client = require('../client.js');
 const sinon = require('sinon');
-
-// デバッガログの出力設定
-process.env.STAGE = 'TEST';
 
 describe('Launch',()=>{
     before(()=>{
