@@ -87,7 +87,7 @@ const updateUserHistory = (handlerInput)=> {
 
 const setUpSellMessage = async(handlerInput, responseBuilder,locale) => {
     const user_count = await getUserHistory(handlerInput);
-    if (locale === 'ja-JP' && user_count % 5 === 0) {
+    if (locale === 'ja-JP' && user_count % 4 === 0) {
         const entitledProducts = await getEntitledProducts(handlerInput);
         if (!entitledProducts || entitledProducts.length === 0) {
             responseBuilder.addDirective({
