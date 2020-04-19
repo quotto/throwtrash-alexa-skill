@@ -2,9 +2,6 @@ const assert = require('assert');
 const logger = require('../logger.js');
 
 describe('logger test',()=>{
-    it('default log level when production',()=>{
-        assert.equal(logger.LEVEL, logger.INFO);
-    });
     it('change level',()=>{
         logger.LEVEL = logger.WARN;
         assert.equal(logger.LEVEL,logger.WARN)

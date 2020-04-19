@@ -335,7 +335,7 @@ const GetDayFromTrashTypeIntent = {
                 responseBuilder
                     .speak(textCreator.getDayFromTrashTypeMessage(slotValue, trash_data))
                 await setUpSellMessage(handlerInput, responseBuilder);
-                return requestEnvelope.getResponse();
+                return responseBuilder.getResponse();
             }
         } 
         // ユーザーの発話がスロット以外 または 合致するデータが登録情報に無かった場合はAPIでのテキスト比較を実施する
