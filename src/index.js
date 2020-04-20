@@ -22,7 +22,6 @@ const PointDayValue = [
     {value:9,weekday:6}
 ];
 
-const ReminderProductId = 'amzn1.adg.product.53b195eb-738d-4696-baea-c17fdce1ebc7';
 const persistenceAdapter = new S3PersistenceAdapter({bucketName: `throwtrash-user-history-${process.env.APP_REGION}`});
 
 const init = async (handlerInput,option)=>{
@@ -60,43 +59,32 @@ const getEntitledProducts = (handlerInput)=>{
     });
 };
 
-const getUserHistory = async(handlerInput) => {
+const updateUserHistory = async(handlerInput)=> {
     // 初回呼び出しおよびエラーが発生した場合には0除算を避けるため1を返す
-    return handlerInput.attributesManager.getPersistentAttributes().then(attributes=>{
-        logger.debug(`get_schedule_count: ${attributes.get_schedule_count}`);
-        return attributes.get_schedule_count ? attributes.get_schedule_count : 1
-    }).catch(err => {
-        logger.error("getPersistentAttributes Error:");
+    try {
+        const attributes = await handlerInput.attributesManager.getPersistentAttributes();
+        attributes.get_schedule_count = attributes.get_schedule_count ? attributes.get_schedule_count + 1 : 1;
+        handlerInput.attributesManager.setPersistentAttributes(attributes);
+        await handlerInput.attributesManager.savePersistentAttributes();
+        return attributes.get_schedule_count;
+    }catch(err){
         logger.error(err);
         return 1;
-    });
-}
-
-const updateUserHistory = (handlerInput)=> {
-    let get_schedule_count = 0;
-    return handlerInput.attributesManager.getPersistentAttributes().then(attributes=>{
-        get_schedule_count = attributes.get_schedule_count = attributes.get_schedule_count ? attributes.get_schedule_count + 1 : 1;
-        handlerInput.attributesManager.setPersistentAttributes(attributes);
-        return handlerInput.attributesManager.savePersistentAttributes();
-    }).then(()=>{
-        return get_schedule_count;
-    }).catch(err=>{
-        logger.error(err);
-        return 0;
-    })
+    }
 };
 
 const setUpSellMessage = async(handlerInput, responseBuilder) => {
-    const user_count = await getUserHistory(handlerInput);
-    if (handlerInput.requestEnvelope.request.locale === 'ja-JP' && user_count % 4 === 0) {
+    const user_count = await updateUserHistory(handlerInput);
+    if (handlerInput.requestEnvelope.request.locale === 'ja-JP' && user_count % 5 === 0) {
         const entitledProducts = await getEntitledProducts(handlerInput);
         if (!entitledProducts || entitledProducts.length === 0) {
+            logger.info("Upsell");
             responseBuilder.addDirective({
                 type: "Connections.SendRequest",
                 name: "Upsell",
                 payload: {
                     InSkillProduct: {
-                        productId: ReminderProductId
+                        productId: process.env.REMINDER_PRODUCT_ID
                     },
                     upsellMessage: '<break stength="strong"/>' + textCreator.upsell
                 },
@@ -170,7 +158,6 @@ const LaunchRequestHandler = {
             const second = all[1];
             const third = all[2] ;
 
-            const reprompt_message = textCreator.launch_reprompt;
             if (requestEnvelope.context.System.device.supportedInterfaces.Display) {
                 const schedule_directive = displayCreator.getThrowTrashesDirective(0, [
                     { data: first, date: client.calculateLocalTime(0) },
@@ -179,11 +166,15 @@ const LaunchRequestHandler = {
                 ])
                 responseBuilder.addDirective(schedule_directive).withShouldEndSession(true);
             }
+            responseBuilder.speak(textCreator.getLaunchResponse(first));
 
             const metadata = handlerInput.requestEnvelope.request.metadata;
             if(metadata && metadata.referrer === 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler') {
-                responseBuilder.speak(textCreator.getLaunchResponse(first)).withShouldEndSession(true);
+                logger.debug("From Regular Action");
+                responseBuilder.withShouldEndSession(true);
             } else if(!await setUpSellMessage(handlerInput, responseBuilder)) {
+                logger.debug("Reprompt");
+                const reprompt_message = textCreator.launch_reprompt;
                 // アップセルを行わなければrepromptする
                 responseBuilder.speak(textCreator.getLaunchResponse(first) + reprompt_message).reprompt(reprompt_message);
             }
@@ -372,8 +363,7 @@ const GetDayFromTrashTypeIntent = {
                 return responseBuilder.speak(textCreator.unknown_error).withShouldEndSession(true).getResponse();
             }
         }
-        responseBuilder
-            .speak(textCreator.getDayFromTrashTypeMessage({id: 'other', name: speeched_trash}, trash_data));
+        responseBuilder.speak(textCreator.getDayFromTrashTypeMessage({id: 'other', name: speeched_trash}, trash_data));
 
         await setUpSellMessage(handlerInput, responseBuilder);
         return responseBuilder.getResponse();
@@ -431,7 +421,7 @@ const CheckReminderHandler = {
                     name: "Buy",
                     payload: {
                         InSkillProduct: {
-                            productId: ReminderProductId
+                            productId: process.env.REMINDER_PRODUCT_ID
                         }
                     },
                     token: "correlationToken"
@@ -527,7 +517,7 @@ const PurchaseHandler = {
                     name: "Buy",
                     payload: {
                         InSkillProduct: {
-                            productId: ReminderProductId
+                            productId: process.env.REMINDER_PRODUCT_ID
                         }
                     },
                     token: "correlationToken"
@@ -550,7 +540,7 @@ const CancelPurchaseHandler = {
                 name: 'Cancel',
                 payload: {
                     InSkillProduct: {
-                        productId: ReminderProductId
+                        productId: process.env.REMINDER_PRODUCT_ID
                     }
                 },
                 token: "correlationToken"
@@ -568,6 +558,7 @@ const PurchaseResultHandler = {
         const {requestEnvelope, responseBuilder} = handlerInput;
         const purchaseRequest = requestEnvelope.request;
         const purchasePayload = purchaseRequest.payload;
+        logger.debug("PurchaseResult:" + JSON.stringify(purchasePayload));
         if(purchasePayload.purchaseResult === 'ACCEPTED') {
             if(purchaseRequest.name === 'Buy' ||  purchaseRequest.name === 'Upsell') {
                 return responseBuilder
@@ -634,7 +625,6 @@ const SessionEndedRequestHandler = {
         return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest';
     },
     async handle(handlerInput) {
-        await updateUserHistory(handlerInput);
         return handlerInput.responseBuilder
             .withShouldEndSession(true)
             .getResponse();

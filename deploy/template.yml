@@ -9,6 +9,8 @@ Parameters:
     Default: "PRODUCTION"
   APIURL:
     Type: "String"
+  REMINDERPRODUCTID:
+    Type: "String"
 Resources:
   LambdaExecPolicy:
     Type: "AWS::IAM::Policy"
@@ -113,6 +115,7 @@ Resources:
           APP_ID: !Ref APPID
           STAGE: !Ref STAGE
           MecabAPI_URL: !Ref APIURL
+          REMINDER_PRODUCT_ID: !Ref REMINDERPRODUCTID
     DeletionPolicy: Retain
   LambdaEvent:
     Type: "AWS::Lambda::Permission"
