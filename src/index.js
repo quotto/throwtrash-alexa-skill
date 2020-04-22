@@ -54,7 +54,7 @@ const init = async (handlerInput,option)=>{
 const getEntitledProducts = async(handlerInput)=>{
         const ms = handlerInput.serviceClientFactory.getMonetizationServiceClient();
         const locale = handlerInput.requestEnvelope.request.locale;
-        const products =  ms.getInSkillProducts(locale)
+        const products =  await ms.getInSkillProducts(locale);
         return products.inSkillProducts.filter(record=> record.entitled === 'ENTITLED');
 };
 
