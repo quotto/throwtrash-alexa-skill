@@ -51,12 +51,11 @@ const init = async (handlerInput,option)=>{
     }
 };
 
-const getEntitledProducts = (handlerInput)=>{
-    const ms = handlerInput.serviceClientFactory.getMonetizationServiceClient();
-    const locale = handlerInput.requestEnvelope.request.locale;
-    return ms.getInSkillProducts(locale).then(result=>{
-        return result.inSkillProducts.filter(record=> record.entitled === 'ENTITLED');
-    });
+const getEntitledProducts = async(handlerInput)=>{
+        const ms = handlerInput.serviceClientFactory.getMonetizationServiceClient();
+        const locale = handlerInput.requestEnvelope.request.locale;
+        const products =  ms.getInSkillProducts(locale)
+        return products.inSkillProducts.filter(record=> record.entitled === 'ENTITLED');
 };
 
 const updateUserHistory = async(handlerInput)=> {
@@ -75,22 +74,27 @@ const updateUserHistory = async(handlerInput)=> {
 
 const setUpSellMessage = async(handlerInput, responseBuilder) => {
     const user_count = await updateUserHistory(handlerInput);
+    logger.debug(`UserCount: ${user_count}`);
     if (handlerInput.requestEnvelope.request.locale === 'ja-JP' && user_count % 5 === 0) {
-        const entitledProducts = await getEntitledProducts(handlerInput);
-        if (!entitledProducts || entitledProducts.length === 0) {
-            logger.info("Upsell");
-            responseBuilder.addDirective({
-                type: "Connections.SendRequest",
-                name: "Upsell",
-                payload: {
-                    InSkillProduct: {
-                        productId: process.env.REMINDER_PRODUCT_ID
+        try {
+            const entitledProducts = await getEntitledProducts(handlerInput);
+            if (!entitledProducts || entitledProducts.length === 0) {
+                logger.info("Upsell");
+                responseBuilder.addDirective({
+                    type: "Connections.SendRequest",
+                    name: "Upsell",
+                    payload: {
+                        InSkillProduct: {
+                            productId: process.env.REMINDER_PRODUCT_ID
+                        },
+                        upsellMessage: '<break stength="strong"/>' + textCreator.upsell
                     },
-                    upsellMessage: '<break stength="strong"/>' + textCreator.upsell
-                },
-                token: "correlationToken",
-            });
-            return true;
+                    token: "correlationToken",
+                });
+                return true;
+            }
+        } catch(err) {
+            logger.error(err);
         }
     }
     return false;
@@ -360,6 +364,7 @@ const GetDayFromTrashTypeIntent = {
                     trash_data = client.getDayFromTrashType([other_trashes[index]],'other');
                 }
             } catch(error) {
+                logger.error(error);
                 return responseBuilder.speak(textCreator.unknown_error).withShouldEndSession(true).getResponse();
             }
         }

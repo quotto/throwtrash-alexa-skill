@@ -1,4 +1,4 @@
-'use strict'
+    'use strict'
 // デバッガログの出力設定
 process.env.STAGE = 'TEST';
 process.env.APP_REGION = "us-west-2"
@@ -75,6 +75,7 @@ describe('GetDayFromTrashes',()=>{
         });
     });
     it('一致：登録情報がotherで発話が標準スロット外',async()=>{
+        let compare = sinon.stub(Client,'compareTwoText').returns(0.8);
         const request = alexa.request().intent('GetDayFromTrashType')
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata')
@@ -87,8 +88,10 @@ describe('GetDayFromTrashes',()=>{
         const response = await request.send();
         // レスポンスは一致した登録データのtrash_val
         assert.equal(response.prompt(), '<speak>次に野菜ジュースを出せるのは4月9日 火曜日です。</speak>');
+        compare.restore();
     });
     it('不一致：登録情報がotherで発話もother（スコアが低い）',async()=>{
+        const compare = sinon.stub(Client,'compareTwoText').returns(0.1);
         const request = alexa.request().intent('GetDayFromTrashType')
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata')
@@ -101,8 +104,10 @@ describe('GetDayFromTrashes',()=>{
         const response = await request.send();
         // レスポンスは発話したゴミの名前
         assert.equal(response.prompt(), '<speak>データ上には存在しないゴミはごみ出し予定に登録されていません。</speak>');
+        compare.restore();
     });
     it('一致：登録情報がotherで発話が標準スロット',async()=>{
+        const compare = sinon.stub(Client,'compareTwoText').returns(0.9);
         const request = alexa.request().intent('GetDayFromTrashType')
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata2')
@@ -115,8 +120,10 @@ describe('GetDayFromTrashes',()=>{
         const response = await request.send();
         // レスポンスは登録データotherのtrash_val
         assert.equal(response.prompt(), '<speak>次に不燃ごみを出せるのは4月9日 火曜日です。</speak>');
+        compare.restore();
     });
     it('不一致：登録情報がotherで発話がスロット外（スコアが低い）',async()=>{
+        const compare = sinon.stub(Client,'compareTwoText').returns(0.1);
         const request = alexa.request().intent('GetDayFromTrashType')
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata2')
@@ -129,8 +136,12 @@ describe('GetDayFromTrashes',()=>{
         const response = await request.send();
         // レスポンスは発話したゴミの名前
         assert.equal(response.prompt(), '<speak>空き缶はごみ出し予定に登録されていません。</speak>');
+        compare.restore();
     });
     it('一致：登録情報が複数のotherで発話が標準スロット外',async()=>{
+        const compare = sinon.stub(Client,'compareTwoText');
+        compare.withArgs("ペットボトル","不燃ごみ").returns(0.1);
+        compare.withArgs("ペットボトル","ビンとペットボトル").returns(0.8);
         const request = alexa.request().intent('GetDayFromTrashType')
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata3')
@@ -143,6 +154,7 @@ describe('GetDayFromTrashes',()=>{
         const response = await request.send();
         // レスポンスは登録データで最も一致率が高かったデータのtrash_val
         assert.equal(response.prompt(), '<speak>次にビンとペットボトルを出せるのは4月4日 木曜日です。</speak>');
+        compare.restore();
     });
     it('一致：登録情報がother以外で発話が標準スロット',async()=>{
         const request = alexa.request().intent('GetDayFromTrashType')
@@ -188,7 +200,7 @@ describe('GetDayFromTrashes',()=>{
     });
 
     it('APIエラー',async ()=>{
-        const before_url = process.env.MecabAPI_URL;
+        const compare = sinon.stub(Client,'compareTwoText').returns(Promise.reject("err"));
         const request = alexa.request().intent('GetDayFromTrashType')
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata')
@@ -198,14 +210,10 @@ describe('GetDayFromTrashes',()=>{
                                         value: '野菜ジュース'
                                     }
                                 );
-        try {
-            process.env.MecabAPI_URL = '';
-            const response = await request.send();
-            assert.equal(response.prompt(), `<speak>${jp_message.error.unknown}</speak>`);
-        } finally {
-            // eslint-disable-next-line require-atomic-updates
-            process.env.MecabAPI_URL = before_url;
-        }
+        process.env.MecabAPI_URL = '';
+        const response = await request.send();
+        assert.equal(response.prompt(), `<speak>${jp_message.error.unknown}</speak>`);
+        compare.restore();
     })
     after(()=>{
         sinon.restore();
