@@ -36,10 +36,10 @@ Resources:
                - "s3:GetObject"
                - "s3:PutObject"
             Resource: 
-              - !GetAtt HistoryBucket.Arn
+              - !GetAtt PreferenceBucket.Arn
               - !Sub 
-                - "${HistoryBucket}/*"
-                - {HistoryBucket: !GetAtt HistoryBucket.Arn}
+                - "${PreferenceBucket}/*"
+                - {PreferenceBucket: !GetAtt PreferenceBucket.Arn}
 
       PolicyName: !Sub "throwtrash-lambda-policy-${AWS::Region}"
       Roles:
@@ -61,10 +61,10 @@ Resources:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
       RoleName: !Sub "throwtrash-lambda-role-${AWS::Region}"
     DeletionPolicy: Retain
-  HistoryBucket:
+  PreferenceBucket:
     Type: "AWS::S3::Bucket"
     Properties:
-      BucketName: !Sub "throwtrash-user-history-${AWS::Region}"
+      BucketName: !Sub "throwtrash-skill-preference-${AWS::Region}"
     DeletionPolicy: Retain
   TrashScheduleTable:
     Type: "AWS::DynamoDB::Table"

@@ -1,14 +1,23 @@
 'use strict';
+const log4js = require("log4js");
+
+log4js.configure({
+    appenders: {
+        out: {type: "stdout",layout: {
+            type: "pattern",
+            pattern: "[%p] %m"
+        }}
+    },
+    categories: {default: {appenders: ["out"],level: process.env.STAGE === "DEV" ? "debug": "info"}}
+});
+
+const logger = log4js.getLogger();
 const Alexa = require('ask-sdk');
 const {S3PersistenceAdapter} = require('ask-sdk-s3-persistence-adapter');
 const Client = require('./client.js');
 const TextCreator = require('./common/text-creator');
 const DisplayCreator = require('./common/display-creator');
 let textCreator, displayCreator, client;
-
-const logger = require('./logger');
-logger.LEVEL = process.env.STAGE && process.env.STAGE === "TEST" ? logger.DEBUG : logger.INFO;
-
 const PointDayValue = [
     {value:0},
     {value:1},
@@ -22,7 +31,7 @@ const PointDayValue = [
     {value:9,weekday:6}
 ];
 
-const persistenceAdapter = new S3PersistenceAdapter({bucketName: `throwtrash-user-history-${process.env.APP_REGION}`});
+const persistenceAdapter = new S3PersistenceAdapter({bucketName: `throwtrash-skill-preference-${process.env.APP_REGION}`});
 
 const init = async (handlerInput,option)=>{
     const { requestEnvelope, serviceClientFactory } = handlerInput;

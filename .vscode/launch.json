@@ -15,7 +15,7 @@
                 "--timeout",
                 "999999",
                 "--colors",
-                "${workspaceFolder}/src/test/client_test.js"
+                "${workspaceFolder}/src/test/skill_test.js"
             ],
             "internalConsoleOptions": "openOnSessionStart",
             "skipFiles": [
