@@ -4,9 +4,9 @@ Description: The AWS CloudFormation template for BSE Workflow
 Parameters:
   APPID:
     Type: "String"
-  STAGE:
+  RUNLEVEL:
     Type: "String"
-    Default: "PRODUCTION"
+    Default: "DEBUG"
   APIURL:
     Type: "String"
   REMINDERPRODUCTID:
@@ -113,7 +113,7 @@ Resources:
         Variables:
           APP_REGION: !Sub "${AWS::Region}"
           APP_ID: !Ref APPID
-          STAGE: !Ref STAGE
+          RUNLEVEL: !Ref RUNLEVEL
           MecabAPI_URL: !Ref APIURL
           REMINDER_PRODUCT_ID: !Ref REMINDERPRODUCTID
     DeletionPolicy: Retain

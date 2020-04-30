@@ -8,7 +8,7 @@ log4js.configure({
             pattern: "[%p] %m"
         }}
     },
-    categories: {default: {appenders: ["out"],level: process.env.STAGE === "DEV" ? "debug": "info"}}
+    categories: {default: {appenders: ["out"],level: process.env.RUNLEVEL}}
 });
 
 const logger = log4js.getLogger();

@@ -1,6 +1,6 @@
     'use strict'
 // デバッガログの出力設定
-process.env.STAGE = 'TEST';
+process.env.RUNLEVEL = 'DEBUG';
 process.env.APP_REGION = "us-west-2"
 
 const va = require('virtual-alexa');
