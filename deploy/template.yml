@@ -70,6 +70,13 @@ Resources:
     Type: "AWS::DynamoDB::Table"
     Properties:
       BillingMode: "PAY_PER_REQUEST"
+      Tags:
+        -
+          Key: Group
+          Valu: throwtrash
+        -
+          Key: Purpose
+          Value: WebBackend/MobileBackend/Skill
       AttributeDefinitions:
         - 
           AttributeName: "id"
@@ -116,6 +123,9 @@ Resources:
           RUNLEVEL: !Ref RUNLEVEL
           MecabAPI_URL: !Ref APIURL
           REMINDER_PRODUCT_ID: !Ref REMINDERPRODUCTID
+      Tag:
+        Group: throwtrash
+        Purpose: Skill
     DeletionPolicy: Retain
   LambdaEvent:
     Type: "AWS::Lambda::Permission"
