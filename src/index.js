@@ -3,7 +3,7 @@ const log4js = require("log4js");
 
 log4js.configure({
     appenders: {
-        out: {type: "stdout",layout: {
+        out: {type: "console",layout: {
             type: "pattern",
             pattern: "[%p] %m"
         }}
