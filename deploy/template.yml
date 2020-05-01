@@ -123,7 +123,7 @@ Resources:
           RUNLEVEL: !Ref RUNLEVEL
           MecabAPI_URL: !Ref APIURL
           REMINDER_PRODUCT_ID: !Ref REMINDERPRODUCTID
-      Tag:
+      Tags:
         Group: throwtrash
         Purpose: Skill
     DeletionPolicy: Retain
