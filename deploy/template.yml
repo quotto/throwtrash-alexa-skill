@@ -65,6 +65,11 @@ Resources:
     Type: "AWS::S3::Bucket"
     Properties:
       BucketName: !Sub "throwtrash-skill-preference-${AWS::Region}"
+      PublicAccessBlockConfiguration: 
+        BlockPublicAcls: TRUE
+        BlockPublicPolicy: TRUE
+        IgnorePublicAcls: TRUE
+        RestrictPublicBuckets: TRUE
     DeletionPolicy: Retain
   TrashScheduleTable:
     Type: "AWS::DynamoDB::Table"
