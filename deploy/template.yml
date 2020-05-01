@@ -66,10 +66,17 @@ Resources:
     Properties:
       BucketName: !Sub "throwtrash-skill-preference-${AWS::Region}"
       PublicAccessBlockConfiguration: 
-        BlockPublicAcls: TRUE
-        BlockPublicPolicy: TRUE
-        IgnorePublicAcls: TRUE
-        RestrictPublicBuckets: TRUE
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      Tags:
+        -
+          Key: Group
+          Value: throwtrash
+        -
+          Key: Purpose
+          Value: Skill
     DeletionPolicy: Retain
   TrashScheduleTable:
     Type: "AWS::DynamoDB::Table"
@@ -78,7 +85,7 @@ Resources:
       Tags:
         -
           Key: Group
-          Valu: throwtrash
+          Value: throwtrash
         -
           Key: Purpose
           Value: WebBackend/MobileBackend/Skill
