@@ -599,12 +599,15 @@ describe('getRemindBody',()=>{
 describe('getTrashData', function () {
     const aws = require("aws-sdk");
     const documentClient = new aws.DynamoDB.DocumentClient({region: "us-west-2"});
-    const access_token_001 = "aaaaaaaaaa";
+    const access_token_001 = "abcd989049AsdjfdALJD0j-sdfadshfF";
     const hash_001 = crypto.createHash("sha512").update(access_token_001).digest("hex");
-    const id_001 = "00b38bbe-8a0f-4afc-afa9-c00aaac1d1df";
+    const id_001 = "10b38bbe-8a0f-4afc-afa9-c00aaac1d1de";
 
     const access_token_002 = "bbbbbbbbb";
     const hash_002 = crypto.createHash("sha512").update(access_token_002).digest("hex");
+    
+    // 旧型のアクセストークン
+    const access_token_003 = "10b38bbe-8a0f-4afc-afa9-c00aaac1d1df";
     before((done)=>{
         documentClient.batchWrite({
             RequestItems: {
@@ -636,6 +639,14 @@ describe('getTrashData', function () {
                                 description: JSON.stringify(testData.evweek)
                             }
                         }
+                    },
+                    {
+                        PutRequest: {
+                            Item: {
+                                id: access_token_003,
+                                description: JSON.stringify(testData.evweek)
+                            }
+                        }
                     }
                 ]
             }
@@ -643,6 +654,13 @@ describe('getTrashData', function () {
     });
     it('正常データ', done=>{
         Client.getTrashData(access_token_001).then(result=>{
+            assert.equal(result.status, 'success');
+            done();
+        });
+    });
+    it('正常データ（旧タイプ）', done=>{
+        // 生アクセストークンが36桁の場合はそのままTrashScheduleを検索する
+        Client.getTrashData(access_token_003).then(result=>{
             assert.equal(result.status, 'success');
             done();
         });
@@ -685,6 +703,13 @@ describe('getTrashData', function () {
                         DeleteRequest: {
                             Key: {
                                 id: id_001
+                            }
+                        }
+                    },
+                    {
+                        DeleteRequest: {
+                            Key: {
+                                id: access_token_003
                             }
                         }
                     }

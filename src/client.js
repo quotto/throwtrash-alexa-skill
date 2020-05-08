@@ -27,20 +27,26 @@ class Client {
     target_day: 0:今日,1:明日
     **/
     static async getTrashData(access_token) {
-        const accessTokenOption = {
-            TableName: "throwtrash-backend-accesstoken",
-            Key: {
-                access_token: toHash(access_token)
-            }
-        }; 
         try {
-            const tokenData = await dynamoClient.get(accessTokenOption).promise();
-            logger.debug(JSON.stringify(tokenData));
-            if (tokenData.Item) {
+            let user_id = access_token
+            // 非互換用のチェック条件,access_tokenが36桁の場合はuser_idとみなして直接TrashScheduleを検索する
+            if(access_token.length != 36) {
+                const accessTokenOption = {
+                    TableName: "throwtrash-backend-accesstoken",
+                    Key: {
+                        access_token: toHash(access_token)
+                    }
+                }; 
+                const tokenData = await dynamoClient.get(accessTokenOption).promise();
+                logger.debug(JSON.stringify(tokenData));
+                user_id = tokenData.Item ? tokenData.Item.user_id : undefined
+            }
+
+            if(user_id) {
                 const params = {
                     TableName: 'TrashSchedule',
                     Key: {
-                        id: tokenData.Item.user_id
+                        id: user_id
                     }
                 };
                 const scheduleData = await dynamoClient.get(params).promise();

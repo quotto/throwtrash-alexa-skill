@@ -9,6 +9,8 @@ globals:
   SharedArrayBuffer: readonly
 parserOptions:
   ecmaVersion: 2018
-rules: {
+rules: 
   no-console: "off"
-}
+  no-unused-vars: 
+    - 2
+    - argsIgnorePattern: "^_"
