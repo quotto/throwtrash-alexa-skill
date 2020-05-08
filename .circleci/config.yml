@@ -25,7 +25,7 @@ jobs:
       - run:
           name: test
           command: |
-            sudo npm install -g ask-cli
+            sudo npm install -g ask-cli@2.1.1 --unsafe-perm
             mkdir -p ~/.ask
             MecabAPI_URL=${MecabAPI_URL}/test
             echo "${ASK_CLI_CONFIG}" > ~/.ask/cli_config
@@ -45,16 +45,16 @@ jobs:
       - deploy: 
           command: | 
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              STAGE="PRODUCTION"
+              RUNLEVEL="INFO"
               APIURL=${MecabAPI_URL}/production
               AWS_DEFAULT_REGION=${PRODUCTION_REGION}
             else
-              STAGE="TEST"
+              RUNLEVEL="DEBUG"
               APIURL=${MecabAPI_URL}/test
               AWS_DEFAULT_REGION=${TEST_REGION}
             fi
             aws cloudformation package --s3-bucket lambda-function-deployment-${AWS_DEFAULT_REGION} --s3-prefix throwtrashskill --template-file template.yml --output-template-file packaged-template.yml
-            aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID=${APPID} STAGE=${STAGE} APIURL=${APIURL} --role-arn ${CloudFormationRole} --capabilities CAPABILITY_NAMED_IAM
+            aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides APPID=${APPID} RUNLEVEL=${RUNLEVEL} APIURL=${APIURL} REMINDERPRODUCTID=${REMINDER_PRODUCT_ID} --role-arn ${CloudFormationRole} --capabilities CAPABILITY_NAMED_IAM
           working_directory: deploy
 
 workflows:

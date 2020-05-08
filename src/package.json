@@ -4,26 +4,28 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "ask api get-model -s ${APPID} --stage development -l ja-JP | jq '.' > test/model.json;mocha test ",
+    "test": "ask smapi get-interaction-model -s ${APPID} --stage development -l ja-JP | jq '.' > test/model.json;mocha test --timeout 5000ms",
     "deploy": "python ../deploy/deploy.py"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "ask-sdk": "^2.7.0",
+    "ask-sdk": "^2.8.0",
+    "ask-sdk-s3-persistence-adapter": "^2.8.0",
     "dateformat": "^3.0.3",
     "lodash": "^4.17.15",
-    "moment-timezone": "^0.5.26",
-    "request": "^2.88.0",
-    "request-promise": "^4.2.4"
+    "log4js": "^6.2.1",
+    "moment-timezone": "^0.5.28",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.5"
   },
   "devDependencies": {
-    "eslint": "^6.5.1",
+    "eslint": "^6.8.0",
     "lint": "^1.1.2",
-    "mocha": "^6.2.1",
+    "mocha": "^6.2.3",
     "mock-require": "^3.0.3",
     "rewire": "^4.0.1",
     "sinon": "^7.5.0",
-    "virtual-alexa": "^0.7.2"
+    "virtual-alexa": "^0.7.5"
   }
 }

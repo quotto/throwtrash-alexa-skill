@@ -7,8 +7,15 @@ const AWS = require('aws-sdk');
 
 const dynamoClient = new AWS.DynamoDB.DocumentClient({region: process.env.APP_REGION});
 
-const logger = require('./logger');
-logger.LEVEL = process.env.STAGE && process.env.STAGE === 'TEST' ? logger.DEBUG : logger.INFO;
+const log4js = require('log4js');
+const logger = log4js.getLogger();
+
+
+const crypto = require("crypto");
+
+const toHash = (value) => {
+    return crypto.createHash("sha512").update(value).digest("hex");
+}
 class Client {
     constructor(_timezone, _text_creator){
         this.timezone = _timezone || 'utc';
@@ -16,36 +23,53 @@ class Client {
     }
 
     /**
-    access_token: ユーザーを特定するためのuuid
+    access_token: アクセストークン
     target_day: 0:今日,1:明日
     **/
-    static getTrashData(access_token) {
-        const params = {
-            TableName: 'TrashSchedule',
-            Key: {
-                id: access_token
+    static async getTrashData(access_token) {
+        try {
+            let user_id = access_token
+            // 非互換用のチェック条件,access_tokenが36桁の場合はuser_idとみなして直接TrashScheduleを検索する
+            if(access_token.length != 36) {
+                const accessTokenOption = {
+                    TableName: "throwtrash-backend-accesstoken",
+                    Key: {
+                        access_token: toHash(access_token)
+                    }
+                }; 
+                const tokenData = await dynamoClient.get(accessTokenOption).promise();
+                logger.debug(JSON.stringify(tokenData));
+                user_id = tokenData.Item ? tokenData.Item.user_id : undefined
             }
-        };
-        return dynamoClient.get(params).promise().then(data=>{
-            if(typeof(data['Item'])==='undefined') {
-                logger.error(`User Not Found => ${access_token}`);
-                return {
-                        status:'error',
-                        msgId: 'id_not_found_error' 
+
+            if(user_id) {
+                const params = {
+                    TableName: 'TrashSchedule',
+                    Key: {
+                        id: user_id
+                    }
                 };
-            } else {
-                return {
-                        status:'success',
-                        response:JSON.parse(data['Item']['description'])
-                };
+                const scheduleData = await dynamoClient.get(params).promise();
+                logger.debug(JSON.stringify(scheduleData));
+                if (scheduleData.Item) {
+                    return {
+                        status: 'success',
+                        response: JSON.parse(scheduleData.Item.description)
+                    };
+                }
             }
-        }).catch(err=>{
+            logger.error(`User Not Found(AccessToken: ${access_token})`);
+            return {
+                status: 'error',
+                msgId: 'id_not_found_error'
+            };
+        } catch(err) {
             logger.error(err);
             return {
                     status:'error',
                     msgId: 'general_error'
             };
-        });
+        }
     }
 
     /**

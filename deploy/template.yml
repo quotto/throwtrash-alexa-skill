@@ -4,10 +4,12 @@ Description: The AWS CloudFormation template for BSE Workflow
 Parameters:
   APPID:
     Type: "String"
-  STAGE:
+  RUNLEVEL:
     Type: "String"
-    Default: "PRODUCTION"
+    Default: "DEBUG"
   APIURL:
+    Type: "String"
+  REMINDERPRODUCTID:
     Type: "String"
 Resources:
   LambdaExecPolicy:
@@ -20,13 +22,25 @@ Resources:
             Effect: "Allow"
             Action: "dynamodb:*"
             Resource: 
-              - !GetAtt HistoryTable.Arn
               - !GetAtt TrashScheduleTable.Arn
+              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/throwtrash-backend-accesstoken"
           -
             Effect: "Allow"
             Action: "lambda:*"
             Resource: 
               - !GetAtt ThrowTrashSkill.Arn
+          -
+            Effect: "Allow"
+            Action: 
+               - "s3:ListBucket"
+               - "s3:GetObject"
+               - "s3:PutObject"
+            Resource: 
+              - !GetAtt PreferenceBucket.Arn
+              - !Sub 
+                - "${PreferenceBucket}/*"
+                - {PreferenceBucket: !GetAtt PreferenceBucket.Arn}
+
       PolicyName: !Sub "throwtrash-lambda-policy-${AWS::Region}"
       Roles:
         - !Ref LambdaExecRole
@@ -47,18 +61,34 @@ Resources:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
       RoleName: !Sub "throwtrash-lambda-role-${AWS::Region}"
     DeletionPolicy: Retain
-  HistoryTable:
-    Type: "AWS::Serverless::SimpleTable"
+  PreferenceBucket:
+    Type: "AWS::S3::Bucket"
     Properties:
-      PrimaryKey:
-        Name: id
-        Type: String
-      TableName: ThrowTrashHistory
+      BucketName: !Sub "throwtrash-skill-preference-${AWS::Region}"
+      PublicAccessBlockConfiguration: 
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      Tags:
+        -
+          Key: Group
+          Value: throwtrash
+        -
+          Key: Purpose
+          Value: Skill
     DeletionPolicy: Retain
   TrashScheduleTable:
     Type: "AWS::DynamoDB::Table"
     Properties:
       BillingMode: "PAY_PER_REQUEST"
+      Tags:
+        -
+          Key: Group
+          Value: throwtrash
+        -
+          Key: Purpose
+          Value: WebBackend/MobileBackend/Skill
       AttributeDefinitions:
         - 
           AttributeName: "id"
@@ -102,8 +132,12 @@ Resources:
         Variables:
           APP_REGION: !Sub "${AWS::Region}"
           APP_ID: !Ref APPID
-          STAGE: !Ref STAGE
+          RUNLEVEL: !Ref RUNLEVEL
           MecabAPI_URL: !Ref APIURL
+          REMINDER_PRODUCT_ID: !Ref REMINDERPRODUCTID
+      Tags:
+        Group: throwtrash
+        Purpose: Skill
     DeletionPolicy: Retain
   LambdaEvent:
     Type: "AWS::Lambda::Permission"

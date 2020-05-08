@@ -1,14 +1,23 @@
 'use strict';
+const log4js = require("log4js");
+
+log4js.configure({
+    appenders: {
+        out: {type: "console",layout: {
+            type: "pattern",
+            pattern: "[%p] %m"
+        }}
+    },
+    categories: {default: {appenders: ["out"],level: process.env.RUNLEVEL}}
+});
+
+const logger = log4js.getLogger();
 const Alexa = require('ask-sdk');
-const { DynamoDbPersistenceAdapter } = require('ask-sdk-dynamodb-persistence-adapter');
+const {S3PersistenceAdapter} = require('ask-sdk-s3-persistence-adapter');
 const Client = require('./client.js');
 const TextCreator = require('./common/text-creator');
 const DisplayCreator = require('./common/display-creator');
 let textCreator, displayCreator, client;
-
-const logger = require('./logger');
-logger.LEVEL = process.env.STAGE && process.env.STAGE === "TEST" ? logger.DEBUG : logger.INFO;
-
 const PointDayValue = [
     {value:0},
     {value:1},
@@ -22,8 +31,7 @@ const PointDayValue = [
     {value:9,weekday:6}
 ];
 
-const ReminderProductId = 'amzn1.adg.product.53b195eb-738d-4696-baea-c17fdce1ebc7';
-const dynamoDbPersistenceAdapter = new DynamoDbPersistenceAdapter({tableName: 'ThrowTrashHistory', createTable: true});
+const persistenceAdapter = new S3PersistenceAdapter({bucketName: `throwtrash-skill-preference-${process.env.APP_REGION}`});
 
 const init = async (handlerInput,option)=>{
     const { requestEnvelope, serviceClientFactory } = handlerInput;
@@ -52,28 +60,54 @@ const init = async (handlerInput,option)=>{
     }
 };
 
-const getEntitledProducts = (handlerInput)=>{
-    const ms = handlerInput.serviceClientFactory.getMonetizationServiceClient();
-    const locale = handlerInput.requestEnvelope.request.locale;
-    return ms.getInSkillProducts(locale).then(result=>{
-        return result.inSkillProducts.filter(record=> record.entitled === 'ENTITLED');
-    });
+const getEntitledProducts = async(handlerInput)=>{
+        const ms = handlerInput.serviceClientFactory.getMonetizationServiceClient();
+        const locale = handlerInput.requestEnvelope.request.locale;
+        const products =  await ms.getInSkillProducts(locale);
+        return products.inSkillProducts.filter(record=> record.entitled === 'ENTITLED');
 };
 
-const updateUserHistory = (handlerInput)=> {
-    let get_schedule_count = 0;
-    return handlerInput.attributesManager.getPersistentAttributes().then(attributes=>{
-        get_schedule_count = attributes.get_schedule_count = attributes.get_schedule_count ? attributes.get_schedule_count + 1 : 1;
+const updateUserHistory = async(handlerInput)=> {
+    // 初回呼び出しおよびエラーが発生した場合には0除算を避けるため1を返す
+    try {
+        const attributes = await handlerInput.attributesManager.getPersistentAttributes();
+        attributes.get_schedule_count = attributes.get_schedule_count ? attributes.get_schedule_count + 1 : 1;
         handlerInput.attributesManager.setPersistentAttributes(attributes);
-        return handlerInput.attributesManager.savePersistentAttributes();
-    }).then(()=>{
-        logger.info('user count up', get_schedule_count);
-        return get_schedule_count;
-    }).catch(err=>{
+        await handlerInput.attributesManager.savePersistentAttributes();
+        return attributes.get_schedule_count;
+    }catch(err){
         logger.error(err);
-        return 0;
-    })
+        return 1;
+    }
 };
+
+const setUpSellMessage = async(handlerInput, responseBuilder) => {
+    const user_count = await updateUserHistory(handlerInput);
+    logger.debug(`UserCount: ${user_count}`);
+    if (handlerInput.requestEnvelope.request.locale === 'ja-JP' && user_count % 5 === 0) {
+        try {
+            const entitledProducts = await getEntitledProducts(handlerInput);
+            if (!entitledProducts || entitledProducts.length === 0) {
+                logger.info("Upsell");
+                responseBuilder.addDirective({
+                    type: "Connections.SendRequest",
+                    name: "Upsell",
+                    payload: {
+                        InSkillProduct: {
+                            productId: process.env.REMINDER_PRODUCT_ID
+                        },
+                        upsellMessage: '<break stength="strong"/>' + textCreator.upsell
+                    },
+                    token: "correlationToken",
+                });
+                return true;
+            }
+        } catch(err) {
+            logger.error(err);
+        }
+    }
+    return false;
+}
 
 let skill;
 exports.handler = async function(event,context) {
@@ -95,7 +129,7 @@ exports.handler = async function(event,context) {
                 NextPreviousIntentHandler
             )
             .withSkillId(process.env.APP_ID)
-            .withPersistenceAdapter(dynamoDbPersistenceAdapter)
+            .withPersistenceAdapter(persistenceAdapter)
             .withApiClient(new Alexa.DefaultApiClient())
             .create();
     }
@@ -119,8 +153,7 @@ const LaunchRequestHandler = {
                 .getResponse();
         }
         const get_trash_ready = Client.getTrashData(accessToken);
-        const update_history_ready = updateUserHistory(handlerInput)
-        return Promise.all([init_ready, get_trash_ready, update_history_ready]).then(async(results)=>{
+        return Promise.all([init_ready, get_trash_ready]).then(async(results)=>{
             const data = results[1];
             if (data.status === 'error') {
                 return responseBuilder
@@ -138,7 +171,6 @@ const LaunchRequestHandler = {
             const second = all[1];
             const third = all[2] ;
 
-            const reprompt_message = textCreator.launch_reprompt;
             if (requestEnvelope.context.System.device.supportedInterfaces.Display) {
                 const schedule_directive = displayCreator.getThrowTrashesDirective(0, [
                     { data: first, date: client.calculateLocalTime(0) },
@@ -147,30 +179,16 @@ const LaunchRequestHandler = {
                 ])
                 responseBuilder.addDirective(schedule_directive).withShouldEndSession(true);
             }
+            responseBuilder.speak(textCreator.getLaunchResponse(first));
 
-            const user_count = results[2];
-            if (textCreator.locale === 'ja-JP' && user_count % 3 === 0) {
-                const entitledProducts = await getEntitledProducts(handlerInput);
-                if(!entitledProducts || entitledProducts.length === 0) {
-                    return responseBuilder
-                        .speak(textCreator.getLaunchResponse(first))
-                        .addDirective({
-                            type: "Connections.SendRequest",
-                            name: "Upsell",
-                            payload: {
-                                InSkillProduct: {
-                                    productId: ReminderProductId
-                                },
-                                upsellMessage: '<break stength="strong"/>' + textCreator.upsell
-                            },
-                            token: "correlationToken",
-                        }).getResponse();
-                }
-            }
             const metadata = handlerInput.requestEnvelope.request.metadata;
             if(metadata && metadata.referrer === 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler') {
-                responseBuilder.speak(textCreator.getLaunchResponse(first)).withShouldEndSession(true);
-            } else {
+                logger.debug("From Regular Action");
+                responseBuilder.withShouldEndSession(true);
+            } else if(!await setUpSellMessage(handlerInput, responseBuilder)) {
+                logger.debug("Reprompt");
+                const reprompt_message = textCreator.launch_reprompt;
+                // アップセルを行わなければrepromptする
                 responseBuilder.speak(textCreator.getLaunchResponse(first) + reprompt_message).reprompt(reprompt_message);
             }
             return responseBuilder.getResponse();
@@ -199,8 +217,7 @@ const GetPointDayTrashesHandler = {
             const slotValue =requestEnvelope.request.intent.slots.DaySlot.resolutions.resolutionsPerAuthority[0].values[0].value.id;
 
             const get_trash_ready = Client.getTrashData(accessToken);
-            const update_history_ready = updateUserHistory(handlerInput);
-            return Promise.all([init_ready, get_trash_ready, update_history_ready]).then(async(results)=>{
+            return Promise.all([init_ready, get_trash_ready]).then(async(results)=>{
                 const trash_result = results[1];
                 if (trash_result.status === 'error') {
                     return responseBuilder
@@ -235,23 +252,7 @@ const GetPointDayTrashesHandler = {
                     responseBuilder.addDirective(schedule_directive).withShouldEndSession(true);
                 }
                 
-                const user_count = results[2];
-                if (textCreator.locale === 'ja-JP' && user_count % 3 === 0) {
-                    const entitledProducts = await getEntitledProducts(handlerInput);
-                    if (!entitledProducts || entitledProducts.length === 0) {
-                        return responseBuilder.addDirective({
-                            type: "Connections.SendRequest",
-                            name: "Upsell",
-                            payload: {
-                                InSkillProduct: {
-                                    productId: ReminderProductId
-                                },
-                                upsellMessage: '<break stength="strong"/>' + textCreator.upsell
-                            },
-                            token: "correlationToken",
-                        }).getResponse();
-                    }
-                }
+                await setUpSellMessage(handlerInput, responseBuilder);
                 return responseBuilder.getResponse();
             });
         } else {
@@ -335,9 +336,10 @@ const GetDayFromTrashTypeIntent = {
             const trash_data = client.getDayFromTrashType(trash_result.response, slotValue.id);
             if(Object.keys(trash_data).length > 0) {
                 logger.debug('Find Match Trash:'+JSON.stringify(trash_data));
-                return responseBuilder
+                responseBuilder
                     .speak(textCreator.getDayFromTrashTypeMessage(slotValue, trash_data))
-                    .getResponse();
+                await setUpSellMessage(handlerInput, responseBuilder);
+                return responseBuilder.getResponse();
             }
         } 
         // ユーザーの発話がスロット以外 または 合致するデータが登録情報に無かった場合はAPIでのテキスト比較を実施する
@@ -371,12 +373,14 @@ const GetDayFromTrashTypeIntent = {
                     trash_data = client.getDayFromTrashType([other_trashes[index]],'other');
                 }
             } catch(error) {
+                logger.error(error);
                 return responseBuilder.speak(textCreator.unknown_error).withShouldEndSession(true).getResponse();
             }
         }
-        return responseBuilder
-            .speak(textCreator.getDayFromTrashTypeMessage({id: 'other', name: speeched_trash}, trash_data))
-            .getResponse();
+        responseBuilder.speak(textCreator.getDayFromTrashTypeMessage({id: 'other', name: speeched_trash}, trash_data));
+
+        await setUpSellMessage(handlerInput, responseBuilder);
+        return responseBuilder.getResponse();
     }
 };
 
@@ -431,7 +435,7 @@ const CheckReminderHandler = {
                     name: "Buy",
                     payload: {
                         InSkillProduct: {
-                            productId: ReminderProductId
+                            productId: process.env.REMINDER_PRODUCT_ID
                         }
                     },
                     token: "correlationToken"
@@ -527,7 +531,7 @@ const PurchaseHandler = {
                     name: "Buy",
                     payload: {
                         InSkillProduct: {
-                            productId: ReminderProductId
+                            productId: process.env.REMINDER_PRODUCT_ID
                         }
                     },
                     token: "correlationToken"
@@ -550,7 +554,7 @@ const CancelPurchaseHandler = {
                 name: 'Cancel',
                 payload: {
                     InSkillProduct: {
-                        productId: ReminderProductId
+                        productId: process.env.REMINDER_PRODUCT_ID
                     }
                 },
                 token: "correlationToken"
@@ -568,6 +572,7 @@ const PurchaseResultHandler = {
         const {requestEnvelope, responseBuilder} = handlerInput;
         const purchaseRequest = requestEnvelope.request;
         const purchasePayload = purchaseRequest.payload;
+        logger.debug("PurchaseResult:" + JSON.stringify(purchasePayload));
         if(purchasePayload.purchaseResult === 'ACCEPTED') {
             if(purchaseRequest.name === 'Buy' ||  purchaseRequest.name === 'Upsell') {
                 return responseBuilder
@@ -633,7 +638,7 @@ const SessionEndedRequestHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest';
     },
-    handle(handlerInput) {
+    async handle(handlerInput) {
         return handlerInput.responseBuilder
             .withShouldEndSession(true)
             .getResponse();

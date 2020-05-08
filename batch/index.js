@@ -1,26 +1,56 @@
 const aws = require('aws-sdk');
 const fs = require('fs');
+const crypto = require("crypto");
 
 aws.config.update({
     region: process.env.AWS_DEFAULT_REGION
 });
-const dynamoCLient = new aws.DynamoDB.DocumentClient();
+const documentClient = new aws.DynamoDB.DocumentClient();
 
-const params = {
-    TableName: 'TrashSchedule',
-    ProjectionExpression: '#description',
-    FilterExpression: 'contains (#description,:other)',
-    ExpressionAttributeNames: {
-        '#description': 'description'
-    },
-    ExpressionAttributeValues: {
-        ':other': 'other'
-    }
-};
+exports.convert_infinity_token=async() => {
+    await documentClient.scan({
+        TableName: "TrashSchedule"
+    }).promise().then(data=>{
+        const total = data.Items.length;
+        console.log(`total: ${total}`);
+        let count = 1;
+        data.Items.forEach(async(item)=>{
+            if(count % 100 === 0) {
+                console.log(`now: ${count}`);
+            }
+            const hash = crypto.createHash("sha512").update(item.id).digest("hex");
+            await documentClient.put({
+                TableName: "throwtrash-backend-accesstoken",
+                Item: {
+                    access_token: hash,
+                    user_id: item.id
+                }
+            }).promise().then((_)=>{
+            }).catch(err=>{
+                console.log(err);
+            });
+
+        })
+    }).catch(err=>{
+        console.log(err);
+    })
+}
 
 exports.scan_data_contains_other=async()=> {
+    const params = {
+        TableName: 'TrashSchedule',
+        ProjectionExpression: '#description',
+        FilterExpression: 'contains (#description,:other)',
+        ExpressionAttributeNames: {
+            '#description': 'description'
+        },
+        ExpressionAttributeValues: {
+            ':other': 'other'
+        }
+    };
+
     const writer = fs.createWriteStream('wordlist.csv', 'utf-8');
-    return dynamoCLient.scan(params).promise().then(data => {
+    return documentClient.scan(params).promise().then(data => {
         const scanlist = [];
         const total = data.Items.length;
         console.log("total:"+total)
@@ -45,10 +75,17 @@ exports.scan_data_contains_other=async()=> {
     });
 }
 
-exports.scan_data_contains_other().then(data=>{
-    console.log('registered data:')
-    console.log(data);
-    console.log('finished.')
-}).catch(err=>{
-    console.log(err);
-});
+const main = async()=> {
+    const action = process.argv[2];
+    if(action === "wordlist") {
+        console.log("wordlist start");
+        await this.scan_data_contains_other();
+        console.log("finish");
+    } else if(action === "convert_token") {
+        console.log("convert_token start");
+        await this.convert_infinity_token();
+        console.log("finish");
+    }
+}
+
+main();
