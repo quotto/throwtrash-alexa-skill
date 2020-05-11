@@ -7,9 +7,9 @@ const AWS = require('aws-sdk');
 
 const dynamoClient = new AWS.DynamoDB.DocumentClient({region: process.env.APP_REGION});
 
-const log4js = require('log4js');
-const logger = log4js.getLogger();
-
+const common = require("trash-common");
+const logger = common.getLogger();
+logger.LEVEL = process.env.RUNLEVEL === "INFO" ? logger.INFO : logger.DEBUG;
 
 const crypto = require("crypto");
 

@@ -4,6 +4,9 @@ const rewire = require('rewire');
 const rp = require('request-promise');
 const crypto = require("crypto");
 
+const common = require("trash-common");
+const logger = common.getLogger();
+logger.LEVEL =  logger.DEBUG;
 
 process.env.APP_REGION = "us-west-2";
 const Client = rewire('../client.js');
@@ -179,18 +182,20 @@ describe('Client,ja-JP',function(){
             /**
              * テストデータの想定(testdata.jsonのevweek)
              * 1.曜日が一致し該当週のため対象
-             * 2.該当集だが曜日が一致しないので対象外
-             * 3.登録週=今週かつ曜日が一致のため対象
-             * 4.翌週が該当週のため対象外
-             * 5.前週が該当のため対象外
-             * 6.4週間前のため一致
+             * 2.曜日が一致し該当週のため対象(年をまたいだ隔週判定)
+             * 3.該当集だが曜日が一致しないので対象外
+             * 4.登録週=今週かつ曜日が一致のため対象
+             * 5.翌週が該当週のため対象外
+             * 6.前週が該当のため対象外
+             * 7.4週間前のため一致
              */
             try{
                 const result = await client.checkEnableTrashes(testData.evweek,0);
-                assert.equal(result.length,3);
+                assert.equal(result.length,4);
                 assert.equal(result[0].name,'もえるゴミ');
-                assert.equal(result[1].name,'プラスチック');
-                assert.equal(result[2].name,'ビン');
+                assert.equal(result[1].name,'もえないゴミ');
+                assert.equal(result[2].name,'プラスチック');
+                assert.equal(result[3].name,'ビン');
             }finally {
                 stub.restore();
             }
