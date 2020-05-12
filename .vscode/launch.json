@@ -7,7 +7,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Mocha Client Tests",
+            "name": "Mocha skill Tests",
             "program": "${workspaceFolder}/src/node_modules/mocha/bin/_mocha",
             "args": [
                 "-u",
@@ -16,6 +16,24 @@
                 "999999",
                 "--colors",
                 "${workspaceFolder}/src/test/skill_test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Mocha Client Tests",
+            "program": "${workspaceFolder}/src/node_modules/mocha/bin/_mocha",
+            "args": [
+                "-u",
+                "bdd",
+                "--timeout",
+                "999999",
+                "--colors",
+                "${workspaceFolder}/src/test/client_test.js"
             ],
             "internalConsoleOptions": "openOnSessionStart",
             "skipFiles": [

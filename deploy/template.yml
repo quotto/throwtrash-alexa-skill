@@ -2,14 +2,14 @@ AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: The AWS CloudFormation template for BSE Workflow
 Parameters:
-  APPID:
+  AppID:
     Type: "String"
-  RUNLEVEL:
+  RunLevel:
     Type: "String"
     Default: "DEBUG"
-  APIURL:
+  ApiUrl:
     Type: "String"
-  REMINDERPRODUCTID:
+  ReminderProductID:
     Type: "String"
 Resources:
   LambdaExecPolicy:
@@ -22,8 +22,14 @@ Resources:
             Effect: "Allow"
             Action: "dynamodb:*"
             Resource: 
-              - !GetAtt TrashScheduleTable.Arn
-              - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/throwtrash-backend-accesstoken"
+              - !Join 
+                  - "/"
+                  - - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table"
+                    - Fn::ImportValue: throwtrash-db-schedule
+              - !Join 
+                  - "/"
+                  - - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table"
+                    - Fn::ImportValue: throwtrash-db-accesstoken
           -
             Effect: "Allow"
             Action: "lambda:*"
@@ -78,47 +84,6 @@ Resources:
           Key: Purpose
           Value: Skill
     DeletionPolicy: Retain
-  TrashScheduleTable:
-    Type: "AWS::DynamoDB::Table"
-    Properties:
-      BillingMode: "PAY_PER_REQUEST"
-      Tags:
-        -
-          Key: Group
-          Value: throwtrash
-        -
-          Key: Purpose
-          Value: WebBackend/MobileBackend/Skill
-      AttributeDefinitions:
-        - 
-          AttributeName: "id"
-          AttributeType: "S"
-        - 
-          AttributeName: "signinId"
-          AttributeType: "S"
-      KeySchema:
-        -
-          AttributeName: "id"
-          KeyType: "HASH"
-      GlobalSecondaryIndexes:
-        -
-          IndexName: "signinId-index"
-          KeySchema:
-            - 
-              AttributeName: "signinId"
-              KeyType: "HASH"
-          Projection:
-            NonKeyAttributes:
-              - "description"
-              - "id"
-              - "signinService"
-            ProjectionType: "INCLUDE"
-      StreamSpecification:
-        StreamViewType: "NEW_IMAGE"
-      PointInTimeRecoverySpecification:
-        PointInTimeRecoveryEnabled: true
-      TableName: "TrashSchedule"
-    DeletionPolicy: Retain
   ThrowTrashSkill:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -131,10 +96,10 @@ Resources:
       Environment:
         Variables:
           APP_REGION: !Sub "${AWS::Region}"
-          APP_ID: !Ref APPID
-          RUNLEVEL: !Ref RUNLEVEL
-          MecabAPI_URL: !Ref APIURL
-          REMINDER_PRODUCT_ID: !Ref REMINDERPRODUCTID
+          APP_ID: !Ref AppID
+          RUNLEVEL: !Ref RunLevel
+          MecabAPI_URL: !Ref ApiUrl
+          REMINDER_PRODUCT_ID: !Ref ReminderProductID
       Tags:
         Group: throwtrash
         Purpose: Skill
@@ -145,4 +110,4 @@ Resources:
       Action: "lambda:InvokeFunction"
       FunctionName: !Ref ThrowTrashSkill
       Principal: "alexa-appkit.amazon.com"
-      EventSourceToken: !Ref APPID
+      EventSourceToken: !Ref AppID

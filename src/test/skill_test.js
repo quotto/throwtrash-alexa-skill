@@ -1,4 +1,8 @@
 'use strict'
+const common = require("trash-common");
+const logger = common.getLogger();
+logger.LEVEL =  logger.DEBUG;
+
 // デバッガログの出力設定
 process.env.RUNLEVEL = 'DEBUG';
 process.env.APP_REGION = "us-west-2"

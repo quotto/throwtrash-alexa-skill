@@ -1,17 +1,8 @@
 'use strict';
-const log4js = require("log4js");
+const common = require("trash-common");
+const logger = common.getLogger();
+logger.LEVEL = process.env.RUNLEVEL === "INFO" ? logger.INFO : logger.DEBUG;
 
-log4js.configure({
-    appenders: {
-        out: {type: "console",layout: {
-            type: "pattern",
-            pattern: "[%p] %m"
-        }}
-    },
-    categories: {default: {appenders: ["out"],level: process.env.RUNLEVEL}}
-});
-
-const logger = log4js.getLogger();
 const Alexa = require('ask-sdk');
 const {S3PersistenceAdapter} = require('ask-sdk-s3-persistence-adapter');
 const Client = require('./client.js');

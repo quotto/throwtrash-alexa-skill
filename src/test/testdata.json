@@ -188,6 +188,18 @@
             ]
         },
         {
+            "type": "unburn",
+            "schedules": [
+                {
+                    "type": "evweek",
+                    "value": {
+                        "weekday": "3",
+                        "start": "2017-12-17"
+                    }
+                }
+            ]
+        },
+        {
             "type": "other",
             "trash_val": "新運",
             "schedules": [
