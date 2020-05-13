@@ -408,7 +408,7 @@ const CheckReminderHandler = {
         return getEntitledProducts(handlerInput).then((entitledProducts)=>{
             if(entitledProducts && entitledProducts.length > 0) {
                 const weekTypeSlot = requestEnvelope.request.intent.slots.WeekTypeSlot.resolutions;
-                if(weekTypeSlot.resolutionsPerAuthority[0].status.code === "ER_SUCCESS_NO_MATCH") {
+                if(weekTypeSlot && weekTypeSlot.resolutionsPerAuthority[0].status.code === "ER_SUCCESS_NO_MATCH") {
                     logger.debug("WeekTypeSlot is not match")
                     return responseBuilder
                         .addElicitSlotDirective("WeekTypeSlot")
