@@ -383,6 +383,7 @@ const CheckReminderHandler = {
             || handlerInput.requestEnvelope.request.intent.confirmationStatus === 'NONE');
     },
     async handle(handlerInput) {
+        logger.debug(`CheckReminderHandler -> ${JSON.stringify(handlerInput,null,2)}`)
         const {responseBuilder, requestEnvelope} = handlerInput;
         const consentToken = requestEnvelope.context.System.user.permissions
             && requestEnvelope.context.System.user.permissions.consentToken;
