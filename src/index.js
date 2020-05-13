@@ -408,6 +408,14 @@ const CheckReminderHandler = {
         return getEntitledProducts(handlerInput).then((entitledProducts)=>{
             if(entitledProducts && entitledProducts.length > 0) {
                 const weekTypeSlot = requestEnvelope.request.intent.slots.WeekTypeSlot.resolutions;
+                if(weekTypeSlot.resolutionsPerAuthority[0].status.code === "ER_SUCCESS_NO_MATCH") {
+                    logger.debug("WeekTypeSlot is not match")
+                    return responseBuilder
+                        .addElicitSlotDirective("WeekTypeSlot")
+                        .speak(textCreator.ask_reminder_week)
+                        .reprompt(textCreator.ask_reminder_week)
+                        .getResponse();
+                }
                 const timerSlot = requestEnvelope.request.intent.slots.TimerSlot;
                 const dialogState = requestEnvelope.request.dialogState;
                 if (dialogState != 'COMPLETED') {
