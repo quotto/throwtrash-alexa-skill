@@ -2,22 +2,26 @@
   "name": "trahes_client",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "test": "ask smapi get-interaction-model -s ${APPID} --stage development -l ja-JP | jq '.' > test/model.json;mocha test --timeout 5000ms",
+    "test": "jest",
     "deploy": "python ../deploy/deploy.py"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/jest": "^26.0.10",
     "ask-sdk": "^2.8.0",
     "ask-sdk-s3-persistence-adapter": "^2.8.0",
     "dateformat": "^3.0.3",
+    "jest": "^26.4.2",
     "lodash": "^4.17.15",
     "moment-timezone": "^0.5.28",
     "request": "^2.88.2",
     "request-promise": "^4.2.5",
-    "trash-common": "git+https://github.com/quotto/throwtrash-common-module.git#v1.1.1"
+    "trash-common": "git+https://github.com/quotto/throwtrash-common-module.git",
+    "ts-jest": "^26.2.0",
+    "what-the-pack": "^2.0.3"
   },
   "devDependencies": {
     "eslint": "^6.8.0",
@@ -26,6 +30,7 @@
     "mock-require": "^3.0.3",
     "rewire": "^4.0.1",
     "sinon": "^7.5.0",
+    "typescript": "^3.9.7",
     "virtual-alexa": "^0.7.5"
   }
 }
