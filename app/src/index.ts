@@ -106,7 +106,7 @@ const setUpSellMessage = async(handlerInput: HandlerInput, responseBuilder: Resp
 }
 
 let skill: Skill;
-exports.handler = async function(event:RequestEnvelope ,context: any) {
+export const handler  = async function(event:RequestEnvelope ,context: any) {
     if(!skill) {
         skill = SkillBuilders.custom()
             .addRequestHandlers(

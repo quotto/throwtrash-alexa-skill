@@ -1,35 +1,32 @@
 {
-  "name": "trahes_client",
+  "name": "throwtrash-alexa-skill",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "jest",
-    "deploy": "python ../deploy/deploy.py"
+    "build": "tsc"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/jest": "^26.0.10",
     "ask-sdk": "^2.8.0",
     "ask-sdk-s3-persistence-adapter": "^2.8.0",
     "dateformat": "^3.0.3",
-    "jest": "^26.4.2",
     "lodash": "^4.17.15",
     "moment-timezone": "^0.5.28",
     "request": "^2.88.2",
     "request-promise": "^4.2.5",
     "trash-common": "git+https://github.com/quotto/throwtrash-common-module.git",
-    "ts-jest": "^26.2.0",
     "what-the-pack": "^2.0.3"
   },
   "devDependencies": {
+    "@types/jest": "^26.0.13",
     "eslint": "^6.8.0",
+    "jest": "^26.4.2",
     "lint": "^1.1.2",
-    "mocha": "^6.2.3",
     "mock-require": "^3.0.3",
-    "rewire": "^4.0.1",
-    "sinon": "^7.5.0",
+    "ts-jest": "^26.3.0",
     "typescript": "^3.9.7",
     "virtual-alexa": "^0.7.5"
   }

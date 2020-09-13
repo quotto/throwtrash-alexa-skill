@@ -87,7 +87,7 @@ Resources:
   ThrowTrashSkill:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri: ../src
+      CodeUri: ../app
       FunctionName: ThrowTrashSkill
       Handler: index.handler
       Role: !GetAtt LambdaExecRole.Arn

@@ -11,17 +11,17 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - npm-deps-{{ .Branch }}-{{ checksum "src/package-lock.json"}}
+            - npm-deps-{{ .Branch }}-{{ checksum "app/package-lock.json"}}
             - npm-deps-{{ .Branch }}
             - npm-deps-
       - run:
           name: install
           command: npm install
-          working_directory: src
+          working_directory: app
       - save_cache:
-          key: npm-deps-{{ .Branch }}-{{ checksum "src/package-lock.json"}}
+          key: npm-deps-{{ .Branch }}-{{ checksum "app/package-lock.json"}}
           paths:
-            - src/node_modules
+            - app/node_modules
       - run:
           name: test
           command: |
@@ -30,7 +30,7 @@ jobs:
             MecabAPI_URL=${MecabAPI_URL}/test
             echo "${ASK_CLI_CONFIG}" > ~/.ask/cli_config
             npm test
-          working_directory: src
+          working_directory: app
   deploy:
     executor: aws-cli/default
     working_directory: ~/checkout
@@ -39,9 +39,14 @@ jobs:
       - aws-cli/install
       - restore_cache:
           keys:
-            - npm-deps-{{ .Branch }}-{{ checksum "src/package-lock.json"}}
+            - npm-deps-{{ .Branch }}-{{ checksum "app/package-lock.json"}}
             - npm-deps-{{ .Branch }}
             - npm-deps-
+      - run:
+          name: build
+          command: |
+            npm run build
+          working_directory: app
       - deploy: 
           command: | 
             if [ "${CIRCLE_BRANCH}" == "master" ]; then

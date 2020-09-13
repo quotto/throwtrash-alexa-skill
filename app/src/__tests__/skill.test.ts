@@ -11,11 +11,9 @@ import {client} from "trash-common"
 import { GetTrashDataResult } from "trash-common/dist/client";
 
 import {VirtualAlexa} from 'virtual-alexa';
-import * as model from './model.json';
-const handler = './src/index.js'; //テスト実行ディレクトリを起点とした相対パス
-import jp_message from '../common/template_text/ja-JP.text.json';
+const model = './src/__tests__/model.json';
+import {handler} from '../index'; //テスト実行ディレクトリを起点とした相対パス
 const assert = require('assert');
-const sinon = require('sinon');
 
 
 describe('Launch',()=>{
@@ -27,8 +25,8 @@ describe('Launch',()=>{
             });
     })});
     const alexa = VirtualAlexa.Builder()
-        .handler('./src/index.handler')
-        .interactionModelFile('./src/__test__/model.json')
+        .handler(handler)
+        .interactionModelFile(model)
         .create();
     alexa.dynamoDB().mock();
     it('Launch without accesstoken', async ()=>{
@@ -36,7 +34,7 @@ describe('Launch',()=>{
             .set('request.locale', 'ja-JP')
             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
-        assert.equal(response.prompt(), `<speak>${jp_message.help.account}</speak>`);
+        assert.equal(response.prompt(), `<speak>このスキルではごみ出し予定の登録のためにアカウントリンクが必要です。Alexaアプリのホーム画面に表示されたアカウントリンク用カードから、設定を行ってください。</speak>`);
     });
     it('Launch with accesstoken', async()=>{
         const request = alexa.request().launch()
@@ -102,8 +100,8 @@ describe('GetDayFromTrashes',()=>{
     it('一致：登録情報がotherで発話が標準スロット外',async()=>{
         const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve(0.8)))
         const alexa = VirtualAlexa.Builder()
-            .handler('./src/index.handler')
-            .interactionModelFile('./src/__test__/model.json')
+            .handler(handler)
+            .interactionModelFile(model)
             .create();
         alexa.dynamoDB().mock();
         try {
@@ -127,8 +125,8 @@ describe('GetDayFromTrashes',()=>{
     it('不一致：登録情報がotherで発話もother（スコアが低い）',async()=>{
         const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve(0.1)))
         const alexa = VirtualAlexa.Builder()
-            .handler('./src/index.handler')
-            .interactionModelFile('./src/__test__/model.json')
+            .handler(handler)
+            .interactionModelFile(model)
             .create();
         alexa.dynamoDB().mock();
         try {
@@ -152,8 +150,8 @@ describe('GetDayFromTrashes',()=>{
     it('一致：登録情報がotherで発話が標準スロット',async()=>{
         const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve(0.9)))
         const alexa = VirtualAlexa.Builder()
-            .handler('./src/index.handler')
-            .interactionModelFile('./src/__test__/model.json')
+            .handler(handler)
+            .interactionModelFile(model)
             .create();
         alexa.dynamoDB().mock();
         try {
@@ -177,8 +175,8 @@ describe('GetDayFromTrashes',()=>{
     it('不一致：登録情報がotherで発話がスロット外（スコアが低い）',async()=>{
         const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve(0.1)))
         const alexa = VirtualAlexa.Builder()
-            .handler('./src/index.handler')
-            .interactionModelFile('./src/__test__/model.json')
+            .handler(handler)
+            .interactionModelFile(model)
             .create();
         alexa.dynamoDB().mock();
         try {
@@ -210,8 +208,8 @@ describe('GetDayFromTrashes',()=>{
             return new Promise(resolve=>resolve(result));
         });
         const alexa = VirtualAlexa.Builder()
-            .handler('./src/index.handler')
-            .interactionModelFile('./src/__test__/model.json')
+            .handler(handler)
+            .interactionModelFile(model)
             .create();
         alexa.dynamoDB().mock();
         try {
@@ -234,8 +232,8 @@ describe('GetDayFromTrashes',()=>{
     });
     it('一致：登録情報がother以外で発話が標準スロット',async()=>{
         const alexa = VirtualAlexa.Builder()
-            .handler('./src/index.handler')
-            .interactionModelFile('./src/__test__/model.json')
+            .handler(handler)
+            .interactionModelFile(model)
             .create();
         alexa.dynamoDB().mock();
         const request = alexa.request().intent('GetDayFromTrashType')
@@ -254,8 +252,8 @@ describe('GetDayFromTrashes',()=>{
     });
     it('一致：登録情報がother以外で発話がスロット外r',async()=>{
         const alexa = VirtualAlexa.Builder()
-            .handler('./src/index.handler')
-            .interactionModelFile('./src/__test__/model.json')
+            .handler(handler)
+            .interactionModelFile(model)
             .create();
         alexa.dynamoDB().mock();
         const request = alexa.request().intent('GetDayFromTrashType')
@@ -274,8 +272,8 @@ describe('GetDayFromTrashes',()=>{
     });
     it('一致：登録情報がotherで発話がother',async()=>{
         const alexa = VirtualAlexa.Builder()
-            .handler('./src/index.handler')
-            .interactionModelFile('./src/__test__/model.json')
+            .handler(handler)
+            .interactionModelFile(model)
             .create();
         alexa.dynamoDB().mock();
         const request = alexa.request().intent('GetDayFromTrashType')
@@ -296,8 +294,8 @@ describe('GetDayFromTrashes',()=>{
     it('APIエラー',async ()=>{
         const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(Promise.reject("err"));
         const alexa = VirtualAlexa.Builder()
-            .handler('./src/index.handler')
-            .interactionModelFile('./src/__test__/model.json')
+            .handler(handler)
+            .interactionModelFile(model)
             .create();
         alexa.dynamoDB().mock();
         try {
