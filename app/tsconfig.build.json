@@ -68,4 +68,5 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
   },
+  "exclude": ["node_modules","src/__tests__"]
 }
