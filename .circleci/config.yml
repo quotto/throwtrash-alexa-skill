@@ -32,6 +32,15 @@ jobs:
             export APP_ID=$APPID
             npm test
           working_directory: app
+      - run:
+          name: build
+          command: |
+            npm run build
+          working_directory: app
+      - persist_to_workspace:
+          root: ~/checkout/app
+          paths:
+            - "dist/*"
   deploy:
     executor: aws-cli/default
     working_directory: ~/checkout
@@ -43,11 +52,8 @@ jobs:
             - npm-deps-{{ .Branch }}-{{ checksum "app/package-lock.json"}}
             - npm-deps-{{ .Branch }}
             - npm-deps-
-      - run:
-          name: build
-          command: |
-            node_modules/.bin/tsc
-          working_directory: app
+      - attach_workspace:
+          at: ~/checkout/app
       - deploy: 
           command: | 
             if [ "${CIRCLE_BRANCH}" == "master" ]; then

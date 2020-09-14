@@ -89,7 +89,7 @@ Resources:
     Properties:
       CodeUri: ../app
       FunctionName: ThrowTrashSkill
-      Handler: index.handler
+      Handler: dist/index.handler
       Role: !GetAtt LambdaExecRole.Arn
       Runtime: nodejs12.x
       Timeout: 30
