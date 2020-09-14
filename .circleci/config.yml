@@ -65,6 +65,12 @@ jobs:
               APIURL=${MecabAPI_URL}/test
               AWS_DEFAULT_REGION=${TEST_REGION}
             fi
+
+            # lambdaでは1980年以前のタイムスタンプを持つファイルをzipできないためざっくりと1981年以前のファイル日時を更新する
+            YEAR_DIFF=$(expr `date +%Y` - 1981)
+            DATE_DIFF=$(expr $YEAR_DIFF \* 365)
+            find app/node_modules -daystart -mtime +$DATE_DIFF -exec touch {} \;
+
             aws cloudformation package --s3-bucket lambda-function-deployment-${AWS_DEFAULT_REGION} --s3-prefix throwtrashskill --template-file template.yml --output-template-file packaged-template.yml
             aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides AppID=${APPID} RunLevel=${RUNLEVEL} ApiUrl=${APIURL} ReminderProductID=${REMINDER_PRODUCT_ID} --role-arn ${CloudFormationRole} --capabilities CAPABILITY_NAMED_IAM
           working_directory: deploy
