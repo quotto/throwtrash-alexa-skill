@@ -23,14 +23,14 @@ export class DisplayCreator {
     private commonText: any;
     constructor(locale: string) {
         this.locale = locale;
-        this.displayText = require(`resource/template_text/${locale}.display.json`);
-        this.commonText = require(`resource/template_text/${this.locale}.common.json`);
+        this.displayText = require(`./resource/template_text/${locale}.display.json`);
+        this.commonText = require(`./resource/template_text/${this.locale}.common.json`);
     }
 
     getThrowTrashesDirective(target_day: number, schedules: DiaplayDateItem[]): Directive {
-        const document = require('resource/display/apl_template_export.json');
-        const datasources = _.cloneDeep(require('resource/display/datasources.json'));
-        const item = _.cloneDeep(require('resource/display/item_format.json'));
+        const document = require('./resource/display/apl_template_export.json');
+        const datasources = _.cloneDeep(require('./resource/display/datasources.json'));
+        const item = _.cloneDeep(require('./resource/display/item_format.json'));
         schedules.forEach(schedule=>{
             item.listItemIdentifier = new String(schedule.date);
             item.token = new String(target_day);
