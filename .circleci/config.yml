@@ -29,6 +29,7 @@ jobs:
             mkdir -p ~/.ask
             MecabAPI_URL=${MecabAPI_URL}/test
             echo "${ASK_CLI_CONFIG}" > ~/.ask/cli_config
+            export APP_ID=$APPID
             npm test
           working_directory: app
   deploy:
