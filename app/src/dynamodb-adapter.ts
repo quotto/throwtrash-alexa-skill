@@ -4,15 +4,13 @@ import {DynamoDB} from 'aws-sdk'
 const dynamoClient: DynamoDB.DocumentClient  = new DynamoDB.DocumentClient({region: process.env.APP_REGION});
 import crypto = require("crypto")
 
-import requestPromise = require('request-promise');
-
 export class DynamoDBAdapter implements client.DBAdapter{
     getUserIDByAccessToken(access_token: string): Promise<string> {
             const hashkey = crypto.createHash("sha512").update(access_token).digest("hex")
             return dynamoClient.get({
                 TableName: "throwtrash-backend-accesstoken",
                 Key: {
-                    accesstoken: access_token
+                    accesstoken: hashkey
                 }
             }).promise().then((data: DynamoDB.DocumentClient.GetItemOutput)=>{
                 if(data.Item) {
