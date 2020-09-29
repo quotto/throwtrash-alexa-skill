@@ -10,7 +10,7 @@ export class DynamoDBAdapter implements client.DBAdapter{
             return dynamoClient.get({
                 TableName: "throwtrash-backend-accesstoken",
                 Key: {
-                    accesstoken: hashkey
+                    access_token: hashkey
                 }
             }).promise().then((data: DynamoDB.DocumentClient.GetItemOutput)=>{
                 if(data.Item) {
