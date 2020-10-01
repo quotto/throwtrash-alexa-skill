@@ -17,7 +17,7 @@
     "moment-timezone": "^0.5.28",
     "request": "^2.88.2",
     "request-promise": "^4.2.5",
-    "trash-common": "git+https://github.com/quotto/throwtrash-common-module.git",
+    "trash-common": "git+https://github.com/quotto/throwtrash-common-module.git#v2.0.1",
     "what-the-pack": "^2.0.3"
   },
   "devDependencies": {
