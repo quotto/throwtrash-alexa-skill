@@ -24,7 +24,7 @@
         "weekday": "every %s",
         "biweek": "%s1 %s2",
         "month":"%s of every month",
-        "evweek":"every other %s"
+        "evweek":"%s1 every %s2 weeks"
     },
     "trashname": {
         "burn" : "burnable trash",
