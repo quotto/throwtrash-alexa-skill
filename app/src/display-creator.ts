@@ -1,34 +1,43 @@
 'use strict';
+import {TrashData, TrashTypeValue, client} from "trash-common"
+import {Directive} from "ask-sdk-model"
 const _ = require('lodash');
 const dateformat = require('dateformat');
 
-const create_response_trash_text = (data)=> {
-    const response_text = [];
+const create_response_trash_text = (data: TrashTypeValue[]): string=> {
+    const response_text: string[] = [];
     data.forEach((trash_data) => {
         response_text.push(trash_data.name);
     });
     return response_text.join('/');
 };
 
-class DisplayCreator {
-    constructor(locale) {
+interface DiaplayDateItem {
+    data: TrashTypeValue[],
+    date: Date
+}
+
+export class DisplayCreator {
+    private locale: string;
+    private displayText: any;
+    private commonText: any;
+    constructor(locale: string) {
         this.locale = locale;
-        this.displayText = require(`./template_text/${locale}.display.json`);
-        this.commonText = require(`./template_text/${this.locale}.common.json`);
+        this.displayText = require(`./resource/template_text/${locale}.display.json`);
+        this.commonText = require(`./resource/template_text/${this.locale}.common.json`);
     }
 
-    getThrowTrashesDirective(target_day, schedules) {
-        const document = require('./display/apl_template_export.json');
-        const datasources = _.cloneDeep(require('./display/datasources.json'));
+    getThrowTrashesDirective(target_day: number, schedules: DiaplayDateItem[]): Directive {
+        const document = require('./resource/display/apl_template_export.json');
+        const datasources = _.cloneDeep(require('./resource/display/datasources.json'));
+        const item = _.cloneDeep(require('./resource/display/item_format.json'));
         schedules.forEach(schedule=>{
-            const item = _.cloneDeep(require('./display/item_format.json'));
-            const {date, data} = schedule;
-            item.listItemIdentifier = new String(date);
+            item.listItemIdentifier = new String(schedule.date);
             item.token = new String(target_day);
-            item.textContent.primaryText.text = dateformat(date, 'yyyy/mm/dd') + `(${this.commonText.weekday[date.getDay()]})`;
-            item.textContent.secondaryText.text = data.length > 0 ? create_response_trash_text(data) : this.displayText.nothing;
-            if (data.length > 0) {
-                data.forEach((trashdata) => {
+            item.textContent.primaryText.text = dateformat(schedule.date, 'yyyy/mm/dd') + `(${this.commonText.weekday[schedule.date.getDay()]})`;
+            item.textContent.secondaryText.text = schedule.data.length > 0 ? create_response_trash_text(schedule.data) : this.displayText.nothing;
+            if (schedule.data.length > 0) {
+                schedule.data.forEach((trashdata) => {
                     const filename = `https://s3-ap-northeast-1.amazonaws.com/myskill-image/throwtrash/${this.locale}/${trashdata.type}.png`;
                     item.image.sources.push(
                         {
@@ -45,13 +54,12 @@ class DisplayCreator {
         datasources.dataSources.listTemplate2Metadata.title = this.displayText.scheduletitle;
         return {
             type: 'Alexa.Presentation.APL.RenderDocument',
-            version: '1.0',
             document: document.document,
             datasources: datasources.dataSources
         }
     }
 
-    getShowScheduleDirective(regist_data) {
+    getShowScheduleDirective(regist_data: client.TrashDataText[]): Directive {
         const document = require('./display/apl_template_export.json');
         const datasources = _.cloneDeep(require('./display/datasources.json'));
         datasources.dataSources.listTemplate2Metadata.title = this.displayText.registerdtitle;
@@ -74,11 +82,9 @@ class DisplayCreator {
         });
         return {
             type: 'Alexa.Presentation.APL.RenderDocument',
-            version: '1.0',
             document: document.document,
             datasources: datasources.dataSources
         }
     }
 
 }
-module.exports = DisplayCreator;

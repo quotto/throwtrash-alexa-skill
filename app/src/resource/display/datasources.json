@@ -1,0 +1,19 @@
+{
+    "dataSources": {
+        "listTemplate2Metadata": {
+            "type": "object",
+            "objectId": "lt1Metadata",
+            "backgroundImage": null,
+            "title": "3日間のゴミ出し予定",
+            "logoUrl": "https://s3-ap-northeast-1.amazonaws.com/myskill-image/throwtrash/gomibako.png"
+        },
+        "listTemplate2ListData": {
+            "type": "list",
+            "listId": "lt2Sample",
+            "totalNumberOfItems": 3,
+            "listPage": {
+                "listItems": []
+            }
+        }
+    }
+}

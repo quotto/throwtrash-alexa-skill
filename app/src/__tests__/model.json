@@ -1,0 +1,644 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "今日のゴミ出し",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "GetPointDayTrashes",
+          "slots": [
+            {
+              "name": "DaySlot",
+              "type": "DaySlot",
+              "samples": [
+                "{DaySlot}"
+              ]
+            }
+          ],
+          "samples": [
+            "{DaySlot} のゴミは",
+            "{DaySlot} のごみは",
+            "{DaySlot}",
+            "{DaySlot} は何のゴミ",
+            "{DaySlot} に出せるゴミは",
+            "{DaySlot} に捨てられるゴミは",
+            "{DaySlot} のゴミを教えて",
+            "{DaySlot} に捨てるゴミは何",
+            "{DaySlot} は何のゴミの日",
+            "{DaySlot} は何を捨てる日",
+            "{DaySlot} のゴミ捨ては",
+            "{DaySlot} は何の日",
+            "{DaySlot} に捨てるゴミは",
+            "{DaySlot} に出すゴミは",
+            "{DaySlot} は何",
+            "{DaySlot} のゴミ捨て予定を教えて",
+            "{DaySlot} のゴミ出し予定を教えて",
+            "{DaySlot} のゴミ出しは",
+            "{DaySlot} は",
+            "{DaySlot} の予定は",
+            "{DaySlot} の予定を教えて"
+          ]
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.MoreIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateSettingsIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NextIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.PageUpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.PageDownIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.PreviousIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.ScrollRightIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.ScrollDownIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.ScrollLeftIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.ScrollUpIntent",
+          "samples": []
+        },
+        {
+          "name": "GetRegisteredContent",
+          "slots": [],
+          "samples": [
+            "スケジュールが知りたい",
+            "登録内容を見せて",
+            "登録情報を見せて",
+            "設定内容が知りたい",
+            "設定が知りたい",
+            "設定内容を教えて",
+            "設定を教えて",
+            "登録した情報が知りたい",
+            "登録した内容が知りたい",
+            "登録した情報を教えて",
+            "登録した内容を教えて",
+            "スケジュールを教えて",
+            "スケジュールを知りたい",
+            "登録情報を知りたい",
+            "登録内容を知りたい",
+            "登録情報を教えて",
+            "登録内容を教えて"
+          ]
+        },
+        {
+          "name": "GetDayFromTrashType",
+          "slots": [
+            {
+              "name": "TrashTypeSlot",
+              "type": "TrashTypeSlot",
+              "samples": [
+                "{TrashTypeSlot}"
+              ]
+            }
+          ],
+          "samples": [
+            "次の {TrashTypeSlot} を教えて",
+            "次の {TrashTypeSlot} の日は",
+            "{TrashTypeSlot} を出したい",
+            "{TrashTypeSlot} の日はいつ",
+            "{TrashTypeSlot} は",
+            "{TrashTypeSlot} の予定は",
+            "{TrashTypeSlot} をごみに出したい",
+            "{TrashTypeSlot} を捨てたい",
+            "{TrashTypeSlot} の回収日は",
+            "{TrashTypeSlot} を捨てる日は",
+            "{TrashTypeSlot} の日は",
+            "今度の {TrashTypeSlot} の日は",
+            "次の {TrashTypeSlot} はいつ",
+            "{TrashTypeSlot} の日を教えて",
+            "{TrashTypeSlot} はいつ"
+          ]
+        },
+        {
+          "name": "SetReminder",
+          "slots": [
+            {
+              "name": "WeekTypeSlot",
+              "type": "WeekTypeSlot",
+              "samples": [
+                "{WeekTypeSlot}"
+              ]
+            },
+            {
+              "name": "TimerSlot",
+              "type": "AMAZON.TIME",
+              "samples": [
+                "{TimerSlot}"
+              ]
+            }
+          ],
+          "samples": [
+            "{WeekTypeSlot} のリマインダーを {TimerSlot} に登録して",
+            "{TimerSlot} に {WeekTypeSlot} のリマインダーを登録して",
+            "{TimerSlot} に {WeekTypeSlot} のリマインダーを設定して",
+            "{TimerSlot} に {WeekTypeSlot} のリマインダーをセットして",
+            "{WeekTypeSlot} のリマインダーを登録して",
+            "{WeekTypeSlot} のリマインダーを {TimerSlot} に設定して",
+            "{TimerSlot} に {WeekTypeSlot} のリマインダーをセット",
+            "{TimerSlot} に {WeekTypeSlot} のリマインダーを設定",
+            "{TimerSlot} に {WeekTypeSlot} のリマインダーを登録",
+            "{WeekTypeSlot} のリマインダーを {TimerSlot} で登録",
+            "{WeekTypeSlot} のリマインダーを {TimerSlot} で設定",
+            "{WeekTypeSlot} のリマインダーを {TimerSlot} でセット",
+            "{WeekTypeSlot} のリマインダーを {TimerSlot} に登録",
+            "{WeekTypeSlot} のリマインダーを {TimerSlot} に設定",
+            "{WeekTypeSlot} のリマインダーを {TimerSlot} にセット",
+            "{TimerSlot} にリマインダーをセット",
+            "{TimerSlot} にリマインダーを設定",
+            "{TimerSlot} にリマインダーを登録",
+            "{TimerSlot} にリマインド設定",
+            "{TimerSlot} にリマインド登録",
+            "{TimerSlot} にリマインドをセット",
+            "{WeekTypeSlot} のリマインドセット",
+            "{WeekTypeSlot} のリマインダーセット",
+            "{WeekTypeSlot} のリマインダーをセット",
+            "リマインドをセット",
+            "リマインダーセット",
+            "リマインダーをセット",
+            "{WeekTypeSlot} のリマインド設定",
+            "{WeekTypeSlot} のリマインダー設定",
+            "{WeekTypeSlot} のリマインダーを設定",
+            "リマインド設定",
+            "リマインダーを設定して",
+            "リマインダー設定",
+            "{WeekTypeSlot} のリマインドして",
+            "リマインダーをお願い",
+            "リマインドをお願い",
+            "リマインドして",
+            "{WeekTypeSlot} のリマインドをお願い",
+            "{WeekTypeSlot} のリマインダー登録",
+            "リマインダー登録",
+            "リマインダーを登録して",
+            "リマインドを登録して"
+          ]
+        },
+        {
+          "name": "Purchase",
+          "slots": [],
+          "samples": [
+            "オプション機能がほしい",
+            "リマインダー機能がほしい",
+            "オプションを買いたい",
+            "リマインダーを購入したい",
+            "リマインダーを買いたい",
+            "オプションを購入したい"
+          ]
+        },
+        {
+          "name": "CancelPurchase",
+          "slots": [],
+          "samples": [
+            "オプションを返品したい",
+            "オプション機能を払い戻したい",
+            "オプション機能を返品したい",
+            "リマインダーの購入を取消したい",
+            "リマインダーを払い戻したい",
+            "リマインダーを返品したい",
+            "購入を取消したい",
+            "返品したい"
+          ]
+        }
+      ],
+      "types": [
+        {
+          "values": [
+            {
+              "id": "0",
+              "name": {
+                "value": "今日",
+                "synonyms": [
+                  "本日",
+                  "きょう"
+                ]
+              }
+            },
+            {
+              "id": "9",
+              "name": {
+                "value": "土曜日",
+                "synonyms": [
+                  "どようび",
+                  "土曜日",
+                  "どよう"
+                ]
+              }
+            },
+            {
+              "id": "8",
+              "name": {
+                "value": "金曜日",
+                "synonyms": [
+                  "金曜",
+                  "きんようび",
+                  "きんよう"
+                ]
+              }
+            },
+            {
+              "id": "7",
+              "name": {
+                "value": "木曜日",
+                "synonyms": [
+                  "もくよう",
+                  "もくようび",
+                  "木曜"
+                ]
+              }
+            },
+            {
+              "id": "6",
+              "name": {
+                "value": "水曜日",
+                "synonyms": [
+                  "すいよう",
+                  "すいようび",
+                  "水曜"
+                ]
+              }
+            },
+            {
+              "id": "5",
+              "name": {
+                "value": "火曜日",
+                "synonyms": [
+                  "かよう",
+                  "かようび",
+                  "火曜"
+                ]
+              }
+            },
+            {
+              "id": "4",
+              "name": {
+                "value": "月曜日",
+                "synonyms": [
+                  "げつよう",
+                  "げつようび",
+                  "月曜"
+                ]
+              }
+            },
+            {
+              "id": "3",
+              "name": {
+                "value": "日曜日",
+                "synonyms": [
+                  "にちよう",
+                  "日曜",
+                  "にちようび"
+                ]
+              }
+            },
+            {
+              "id": "2",
+              "name": {
+                "value": "明後日",
+                "synonyms": [
+                  "みょうごにち",
+                  "あさって"
+                ]
+              }
+            },
+            {
+              "id": "1",
+              "name": {
+                "value": "明日",
+                "synonyms": [
+                  "あす",
+                  "あした"
+                ]
+              }
+            }
+          ],
+          "name": "DaySlot"
+        },
+        {
+          "values": [
+            {
+              "id": "other",
+              "name": {
+                "value": "その他のゴミ",
+                "synonyms": [
+                  "他のごみ",
+                  "他のゴミ",
+                  "その他のごみ",
+                  "その他"
+                ]
+              }
+            },
+            {
+              "id": "coarse",
+              "name": {
+                "value": "粗大ゴミ",
+                "synonyms": [
+                  "粗大ごみ"
+                ]
+              }
+            },
+            {
+              "id": "resource",
+              "name": {
+                "value": "資源ゴミ",
+                "synonyms": [
+                  "資源ごみ",
+                  "資源"
+                ]
+              }
+            },
+            {
+              "id": "paper",
+              "name": {
+                "value": "古紙",
+                "synonyms": [
+                  "ダンボール",
+                  "雑誌",
+                  "紙",
+                  "紙類",
+                  "新聞紙"
+                ]
+              }
+            },
+            {
+              "id": "petbottle",
+              "name": {
+                "value": "ペットボトル",
+                "synonyms": [
+                  "ボトル"
+                ]
+              }
+            },
+            {
+              "id": "can",
+              "name": {
+                "value": "カン",
+                "synonyms": [
+                  "かん",
+                  "空缶",
+                  "空き缶",
+                  "缶"
+                ]
+              }
+            },
+            {
+              "id": "bin",
+              "name": {
+                "value": "ビン",
+                "synonyms": [
+                  "空きビン",
+                  "空瓶",
+                  "空き瓶",
+                  "びん",
+                  "瓶"
+                ]
+              }
+            },
+            {
+              "id": "bottole",
+              "name": {
+                "value": "ビンカン",
+                "synonyms": [
+                  "瓶カン",
+                  "瓶缶",
+                  "ビン、缶",
+                  "ビンと缶",
+                  "ビン缶",
+                  "瓶、缶",
+                  "瓶と缶",
+                  "瓶とカン",
+                  "ビン、カン",
+                  "ビンとカン"
+                ]
+              }
+            },
+            {
+              "id": "plastic",
+              "name": {
+                "value": "プラスチック",
+                "synonyms": [
+                  "プラごみ",
+                  "プラゴミ",
+                  "プラ"
+                ]
+              }
+            },
+            {
+              "id": "unburn",
+              "name": {
+                "value": "もえないゴミ",
+                "synonyms": [
+                  "燃えないごみ",
+                  "不燃ごみ",
+                  "不燃ゴミ",
+                  "燃えないゴミ"
+                ]
+              }
+            },
+            {
+              "id": "burn",
+              "name": {
+                "value": "燃えるゴミ",
+                "synonyms": [
+                  "可燃ごみ",
+                  "燃えるごみ",
+                  "可燃ゴミ",
+                  "燃やすゴミ",
+                  "もやすゴミ"
+                ]
+              }
+            }
+          ],
+          "name": "TrashTypeSlot"
+        },
+        {
+          "values": [
+            {
+              "id": "1",
+              "name": {
+                "value": "来週",
+                "synonyms": [
+                  "次の週",
+                  "翌週"
+                ]
+              }
+            },
+            {
+              "id": "0",
+              "name": {
+                "value": "今週",
+                "synonyms": [
+                  "今の週"
+                ]
+              }
+            }
+          ],
+          "name": "WeekTypeSlot"
+        }
+      ]
+    },
+    "dialog": {
+      "intents": [
+        {
+          "name": "GetPointDayTrashes",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "DaySlot",
+              "type": "DaySlot",
+              "elicitationRequired": true,
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.843596035804.1441474581867"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GetDayFromTrashType",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "TrashTypeSlot",
+              "type": "TrashTypeSlot",
+              "elicitationRequired": true,
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.726055598572.779288947535"
+              }
+            }
+          ]
+        },
+        {
+          "name": "SetReminder",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "WeekTypeSlot",
+              "type": "WeekTypeSlot",
+              "elicitationRequired": true,
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.876792679413.668437352783"
+              }
+            },
+            {
+              "name": "TimerSlot",
+              "type": "AMAZON.TIME",
+              "elicitationRequired": true,
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.1476043550862.1197324441239"
+              }
+            }
+          ]
+        }
+      ],
+      "delegationStrategy": "SKILL_RESPONSE"
+    },
+    "prompts": [
+      {
+        "id": "Elicit.Slot.843596035804.1441474581867",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "いつの予定が知りたいですか？"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.723240104075.844202733206",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "何曜日の予定ですか？"
+          }
+        ]
+      },
+      {
+        "id": "Confirm.Intent.1400781349724",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "毎日何時にお知らせしますか？"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.1400781349724.1518431400297",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "毎日何時にお知らせしますか？"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.726055598572.779288947535",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "ゴミの種類を指定してください"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.876792679413.668437352783",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "今週と来週、どちらのリマインダーを設定しますか？"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.1476043550862.1197324441239",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "何時にリマインドしますか？"
+          }
+        ]
+      }
+    ]
+  },
+  "version": "26"
+}

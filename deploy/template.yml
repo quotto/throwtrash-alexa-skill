@@ -87,11 +87,11 @@ Resources:
   ThrowTrashSkill:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri: ../src
+      CodeUri: ../app
       FunctionName: ThrowTrashSkill
-      Handler: index.handler
+      Handler: dist/index.handler
       Role: !GetAtt LambdaExecRole.Arn
-      Runtime: nodejs10.x
+      Runtime: nodejs12.x
       Timeout: 30
       Environment:
         Variables:
