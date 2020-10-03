@@ -75,6 +75,57 @@ exports.scan_data_contains_other=async()=> {
     });
 }
 
+exports.set_evweek_interval=async()=>{
+    const params = {
+        TableName: 'TrashSchedule',
+        ProjectionExpression: 'id,#description',
+        FilterExpression: 'contains (#description,:evweek)',
+        ExpressionAttributeNames: {
+            '#description': 'description'
+        },
+        ExpressionAttributeValues: {
+            ':evweek': 'evweek'
+        }
+    };
+    return documentClient.scan(params).promise().then(data => {
+        const scanlist = [];
+        const total = data.Items.length;
+        console.log("total:"+total)
+        let count = 0;
+        data.Items.forEach(async(item)=>{
+            const target = JSON.parse(item.description);
+            target.forEach(trash=>{
+                trash.schedules.forEach(schedule=>{
+                    if(schedule.type==="evweek" && !schedule.value.interval) {
+                        schedule.value.interval=2;
+                    }
+                });
+            });
+            await documentClient.update({
+                TableName: "TrashSchedule",
+                Key: {
+                    id:item.id
+                },
+                UpdateExpression: "set #description = :description",
+                ExpressionAttributeNames: {"#description": "description"},
+                ExpressionAttributeValues: {
+                    ":description": JSON.stringify(target)
+                }
+            }).promise().catch(err=>{
+                console.log(err)
+            })
+            count++;
+            if(count % 100 === 0) {
+                console.log(`now: ${count}`);
+            }
+        });
+        return scanlist;
+    }).catch(err=>{
+        console.log(err);
+        return err;
+    });
+}
+
 const main = async()=> {
     const action = process.argv[2];
     if(action === "wordlist") {
@@ -84,6 +135,10 @@ const main = async()=> {
     } else if(action === "convert_token") {
         console.log("convert_token start");
         await this.convert_infinity_token();
+        console.log("finish");
+    } else if(action === "set-evweek-interval") {
+        console.log("set evweek interval start");
+        await this.set_evweek_interval();
         console.log("finish");
     }
 }
