@@ -22,7 +22,7 @@ describe("getThrowTrashesDirective",()=>{
         expectDataSources.dataSources.listTemplate2Metadata.title = "3日間のごみ出し予定"
         expectDataSources.dataSources.listTemplate2ListData.listPage.listItems = [
             {
-                "listItemIdentifier": "Mon Oct 05 2020 00:00:00 GMT+0900 (GMT+09:00)",
+                "listItemIdentifier": new String(displayDataItem[0].date),
                 "textContent": {
                     "primaryText": {
                         "type": "PlainText",
