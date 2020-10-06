@@ -60,12 +60,12 @@ export class DisplayCreator {
     }
 
     getShowScheduleDirective(regist_data: client.TrashDataText[]): Directive {
-        const document = require('./display/apl_template_export.json');
-        const datasources = _.cloneDeep(require('./display/datasources.json'));
-        datasources.dataSources.listTemplate2Metadata.title = this.displayText.registerdtitle;
+        const document = require('./resource/display/apl_template_export.json');
+        const datasources = _.cloneDeep(require('./resource/display/datasources.json'));
+        datasources.dataSources.listTemplate2Metadata.title = this.displayText.title;
         datasources.dataSources.listTemplate2ListData.totalNumberOfItems = regist_data.length;
         regist_data.forEach((trash) => {
-            const item = _.cloneDeep(require('./display/item_format.json'));
+            const item = _.cloneDeep(require('./resource/display/item_format.json'));
             item.listItemIdentifier = trash.type;
             item.token = trash.type;
             item.textContent.primaryText.text = trash.typeText;
