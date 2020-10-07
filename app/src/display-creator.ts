@@ -30,8 +30,8 @@ export class DisplayCreator {
     getThrowTrashesDirective(target_day: number, schedules: DiaplayDateItem[]): Directive {
         const document = require('./resource/display/apl_template_export.json');
         const datasources = _.cloneDeep(require('./resource/display/datasources.json'));
-        const item = _.cloneDeep(require('./resource/display/item_format.json'));
         schedules.forEach(schedule=>{
+            const item = _.cloneDeep(require('./resource/display/item_format.json'));
             item.listItemIdentifier = new String(schedule.date);
             item.token = new String(target_day);
             item.textContent.primaryText.text = dateformat(schedule.date, 'yyyy/mm/dd') + `(${this.commonText.weekday[schedule.date.getDay()]})`;
