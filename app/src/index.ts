@@ -1,4 +1,3 @@
-'use strict';
 import {client, TrashData} from "trash-common"
 import {DisplayCreator} from "./display-creator"
 
