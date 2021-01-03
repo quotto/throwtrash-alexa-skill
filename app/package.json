@@ -7,7 +7,7 @@
     "test": "jest",
     "build": "tsc -p tsconfig.build.json;cp -r src/resource dist/"
   },
-  "author": "",
+  "author": "ty",
   "license": "ISC",
   "dependencies": {
     "@types/lodash": "^4.14.161",
