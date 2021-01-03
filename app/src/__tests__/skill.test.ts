@@ -8,7 +8,7 @@ process.env.RUNLEVEL = 'DEBUG';
 process.env.APP_REGION = "us-west-2"
 
 import {client} from "trash-common"
-import { GetTrashDataResult } from "trash-common/dist/client";
+import { GetTrashDataResult, CompareResult } from "trash-common/dist/client";
 
 import {VirtualAlexa} from 'virtual-alexa';
 const model = './src/__tests__/model.json';
@@ -98,7 +98,7 @@ describe('GetDayFromTrashes',()=>{
         })
     });
     it('一致：登録情報がotherで発話が標準スロット外',async()=>{
-        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve(0.8)))
+        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve({match: '野菜ジュース',score:0.8})))
         const alexa = VirtualAlexa.Builder()
             .handler(handler)
             .interactionModelFile(model)
@@ -123,7 +123,7 @@ describe('GetDayFromTrashes',()=>{
         }
     });
     it('不一致：登録情報がotherで発話もother（スコアが低い）',async()=>{
-        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve(0.1)))
+        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve({match:'もえるごみ',score:0.1})))
         const alexa = VirtualAlexa.Builder()
             .handler(handler)
             .interactionModelFile(model)
@@ -148,7 +148,7 @@ describe('GetDayFromTrashes',()=>{
         }
     });
     it('一致：登録情報がotherで発話が標準スロット',async()=>{
-        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve(0.9)))
+        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve({match:'もえないゴミ',score:0.9})))
         const alexa = VirtualAlexa.Builder()
             .handler(handler)
             .interactionModelFile(model)
@@ -173,7 +173,7 @@ describe('GetDayFromTrashes',()=>{
         }
     });
     it('不一致：登録情報がotherで発話がスロット外（スコアが低い）',async()=>{
-        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve(0.1)))
+        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve({match: 'びん',score:0.1})))
         const alexa = VirtualAlexa.Builder()
             .handler(handler)
             .interactionModelFile(model)
@@ -199,11 +199,13 @@ describe('GetDayFromTrashes',()=>{
     });
     it('一致：登録情報が複数のotherで発話が標準スロット外',async()=>{
         const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockImplementation((text1,text2)=>{
-            let result = 0
+            const result: CompareResult = {match: "", score:0};
             if(text1 === "ペットボトル" && text2 === "不燃ごみ") {
-                result = 0.1
+                result.match = "不燃ごみ";
+                result.score = 0.1;
             } else if(text1 === "ペットボトル" && text2 === "ビンとペットボトル") {
-                result = 0.8
+                result.match = "ビンとペットボトル";
+                result.score = 0.8;
             }
             return new Promise(resolve=>resolve(result));
         });
@@ -226,6 +228,41 @@ describe('GetDayFromTrashes',()=>{
             const response = await request.send();
             // レスポンスは登録データで最も一致率が高かったデータのtrash_val
             assert.equal(response.prompt(), '<speak>次にビンとペットボトルを出せるのは4月4日 木曜日です。</speak>');
+        } finally {
+            spyCompare.mockRestore();
+        }
+    });
+    it('一致：登録情報が複数のotherで発話が標準スロット外かつ最高スコアが0.5より大きく0.7未満',async()=>{
+        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockImplementation((text1,text2)=>{
+            const result: CompareResult = {match: "", score:0};
+            if(text1 === "もえないゴミ" && text2 === "不燃ごみ") {
+                result.match = "不燃ごみ";
+                result.score = 0.6;
+            } else if(text1 === "もえないゴミ" && text2 === "ビンとペットボトル") {
+                result.match = "ビンとペットボトル";
+                result.score = 0.1;
+            }
+            return new Promise(resolve=>resolve(result));
+        });
+        const alexa = VirtualAlexa.Builder()
+            .handler(handler)
+            .interactionModelFile(model)
+            .create();
+        alexa.dynamoDB().mock();
+        try {
+            const request = alexa.request().intent('GetDayFromTrashType')
+                                .set('request.locale', 'ja-JP')
+                                .set('session.user.accessToken','testdata3')
+                                .set('request.intent.slots.TrashTypeSlot',
+                                    {
+                                        resolutions: { resolutionsPerAuthority: [{ status: { code: 'NO_MATCH' } }] },
+                                        value: 'もえないゴミ'
+                                    }
+                                )
+                                .set("context.System.application.applicationId", process.env.APP_ID)
+            const response = await request.send();
+            // レスポンスは登録データで最も一致率が高かったデータのtrash_val、スコアが0.5より大きく0.7未満の場合は確認を入れる
+            assert.equal(response.prompt(), '<speak>不燃ごみ ですか？次に不燃ごみを出せるのは4月9日 火曜日です。</speak>');
         } finally {
             spyCompare.mockRestore();
         }

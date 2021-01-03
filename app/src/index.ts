@@ -5,7 +5,7 @@ import {DisplayCreator} from "./display-creator"
 import  { Skill, SkillBuilders, DefaultApiClient, HandlerInput, ResponseBuilder  } from 'ask-sdk-core'
 import {services,RequestEnvelope,IntentRequest, interfaces} from 'ask-sdk-model'
 import { DynamoDBAdapter } from "./dynamodb-adapter";
-import { GetTrashDataResult, TrashScheduleService, RecentTrashDate } from "trash-common/dist/client";
+import { GetTrashDataResult, TrashScheduleService, RecentTrashDate, CompareResult } from "trash-common/dist/client";
 import { getLogger } from "trash-common"
 const {S3PersistenceAdapter} = require('ask-sdk-s3-persistence-adapter');
 let textCreator: client.TextCreator,tsService: TrashScheduleService, displayCreator: DisplayCreator
@@ -352,7 +352,7 @@ const GetDayFromTrashTypeIntent = {
         // otherタイプの登録があれば比較する
         let speech_prefix = "";
         if(other_trashes && other_trashes.length > 0) {
-            const compare_list: Array<Promise<number>> = []
+            const compare_list: Array<Promise<CompareResult>> = []
             other_trashes.forEach((trash: TrashData)=>{
                 compare_list.push(
                     tsService.compareTwoText(speeched_trash,trash.trash_val!)
@@ -360,12 +360,21 @@ const GetDayFromTrashTypeIntent = {
             });
 
             try {
-                const compare_result = await Promise.all(compare_list);
+                const compare_result: Array<CompareResult> = await Promise.all(compare_list);
                 logger.info('compare result:'+JSON.stringify(compare_result));
-                const max_score = Math.max(...compare_result);
-                if(max_score >= 0.7) {
-                    const index = compare_result.indexOf(max_score);
-                    trash_data = tsService.getDayByTrashType([other_trashes[index]],'other');
+                const max_data = {trash: "",score: 0, index: 0};
+                compare_result.forEach((result,index)=>{
+                    if(result.score >= max_data.score) {
+                        max_data.trash = result.match
+                        max_data.score = result.score
+                        max_data.index = index
+                    }
+                });
+                if(max_data.score >= 0.5) {
+                    if(max_data.score < 0.7 && max_data.score >= 0.5) {
+                        speech_prefix = `${max_data.trash} ですか？`;
+                    }
+                    trash_data = tsService.getDayByTrashType([other_trashes[max_data.index]],'other');
                 }
             } catch(error) {
                 logger.error(error);
