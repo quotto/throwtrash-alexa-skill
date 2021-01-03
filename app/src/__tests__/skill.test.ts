@@ -98,7 +98,7 @@ describe('GetDayFromTrashes',()=>{
         })
     });
     it('一致：登録情報がotherで発話が標準スロット外',async()=>{
-        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve(0.8)))
+        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve({match: '野菜ジュース',score:0.8})))
         const alexa = VirtualAlexa.Builder()
             .handler(handler)
             .interactionModelFile(model)
@@ -123,7 +123,7 @@ describe('GetDayFromTrashes',()=>{
         }
     });
     it('不一致：登録情報がotherで発話もother（スコアが低い）',async()=>{
-        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve(0.1)))
+        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve({match:'もえるごみ',score:0.1})))
         const alexa = VirtualAlexa.Builder()
             .handler(handler)
             .interactionModelFile(model)
@@ -148,7 +148,7 @@ describe('GetDayFromTrashes',()=>{
         }
     });
     it('一致：登録情報がotherで発話が標準スロット',async()=>{
-        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve(0.9)))
+        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve({match:'もえないゴミ',score:0.9})))
         const alexa = VirtualAlexa.Builder()
             .handler(handler)
             .interactionModelFile(model)
@@ -173,7 +173,7 @@ describe('GetDayFromTrashes',()=>{
         }
     });
     it('不一致：登録情報がotherで発話がスロット外（スコアが低い）',async()=>{
-        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve(0.1)))
+        const spyCompare = jest.spyOn(client.TrashScheduleService.prototype, "compareTwoText").mockReturnValue(new Promise(resolve=>resolve({match: 'びん',score:0.1})))
         const alexa = VirtualAlexa.Builder()
             .handler(handler)
             .interactionModelFile(model)
@@ -205,7 +205,7 @@ describe('GetDayFromTrashes',()=>{
             } else if(text1 === "ペットボトル" && text2 === "ビンとペットボトル") {
                 result = 0.8
             }
-            return new Promise(resolve=>resolve(result));
+            return new Promise(resolve=>resolve({match:'ビンとペットボトル',score:0.7}));
         });
         const alexa = VirtualAlexa.Builder()
             .handler(handler)
