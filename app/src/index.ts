@@ -10,7 +10,7 @@ import { getLogger } from "trash-common"
 const {S3PersistenceAdapter} = require('ask-sdk-s3-persistence-adapter');
 let textCreator: client.TextCreator,tsService: TrashScheduleService, displayCreator: DisplayCreator
 const logger = getLogger();
-process.env.RUNLEVEL === "INFO" ? logger.setLevel_INFO :  logger.setLevel_DEBUG
+process.env.RUNLEVEL === "INFO" ? logger.setLevel_INFO() :  logger.setLevel_DEBUG()
 
 const PointDayValue = [
     {value:0},
@@ -43,11 +43,11 @@ const init = async (handlerInput: HandlerInput,option: any)=>{
             logger.error(e)
         }
         // タイムゾーン取得後にclientインスタンスを生成
-        return (deviceId && upsServiceClient ? 
+        return (deviceId && upsServiceClient ?
             upsServiceClient.getSystemTimeZone(deviceId) : new Promise(resolve => { resolve('Asia/Tokyo') })
         ).then((timezone: any)=>{
             logger.debug('timezone:'+timezone);
-            tsService =  new client.TrashScheduleService(timezone, textCreator, new DynamoDBAdapter()); 
+            tsService =  new client.TrashScheduleService(timezone, textCreator, new DynamoDBAdapter());
         });
     }
 };
@@ -335,7 +335,7 @@ const GetDayFromTrashTypeIntent = {
                 await setUpSellMessage(handlerInput, responseBuilder);
                 return responseBuilder.getResponse();
             }
-        } 
+        }
         // ユーザーの発話がスロット以外 または 合致するデータが登録情報に無かった場合はAPIでのテキスト比較を実施する
         logger.debug('Not match resolutions:'+JSON.stringify(requestEnvelope));
 
@@ -460,7 +460,7 @@ const CheckReminderHandler = {
 
 const SetReminderHandler = {
     canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'IntentRequest' 
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'SetReminder'
             && handlerInput.requestEnvelope.request.intent.confirmationStatus
             && handlerInput.requestEnvelope.request.intent.confirmationStatus != 'NONE';
@@ -492,6 +492,7 @@ const SetReminderHandler = {
 
             const locale: string = requestEnvelope.request.locale || "utc";
             const remind_requests = createRemindRequest(remind_data, time, locale);
+            logger.debug(`Reminder Body:${JSON.stringify(remind_requests)}`);
 
             const ReminderManagementServiceClient = serviceClientFactory?.getReminderManagementServiceClient();
             const remind_list: Array<Promise<services.reminderManagement.ReminderResponse> | undefined> = []
