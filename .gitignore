@@ -2,3 +2,4 @@
 deploy/package-template.yml
 src/test/model.json
 app/dist
+node_modules

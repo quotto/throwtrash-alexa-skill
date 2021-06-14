@@ -1,0 +1,11 @@
+version: "3"
+services: 
+  node:
+    build: .
+    volumes:
+      - ../:/workspace
+      - ~/.aws:/root/.aws
+      - /workspace/app/node_modules
+      - /workspace/batch/node_modules
+      - /workspace/sqs/node_modules
+    command: /bin/sh -c "while sleep 1000; do :; done"
