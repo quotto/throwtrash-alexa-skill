@@ -37,25 +37,29 @@ jobs:
           command: |
             npm run build
           working_directory: app
+      - run:
+          name: layer-install
+          command: |
+            mkdir -p libs/nodejs
+            cp package.json package-lock.json libs/nodejs
+            # プロダクション用のパッケージだけインストールする
+            npm install --prefix libs/nodejs --production
+          working_directory: app
       - persist_to_workspace:
           root: ~/checkout/app
           paths:
             - "dist/*"
+            - "libs/*"
   deploy:
     executor: aws-cli/default
     working_directory: ~/checkout
     steps:
       - checkout
       - aws-cli/install
-      - restore_cache:
-          keys:
-            - npm-deps-{{ .Branch }}-{{ checksum "app/package-lock.json"}}
-            - npm-deps-{{ .Branch }}
-            - npm-deps-
       - attach_workspace:
           at: ~/checkout/app
-      - deploy: 
-          command: | 
+      - deploy:
+          command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
               RUNLEVEL="INFO"
               APIURL=${MecabAPI_URL}/production
@@ -69,7 +73,7 @@ jobs:
             # lambdaでは1980年以前のタイムスタンプを持つファイルをzipできないためざっくりと1981年以前のファイル日時を更新する
             YEAR_DIFF=$(expr `date +%Y` - 1981)
             DATE_DIFF=$(expr $YEAR_DIFF \* 365)
-            find ../app/node_modules -daystart -mtime +$DATE_DIFF -exec touch {} \;
+            find ../app/libs/nodejs/node_modules -daystart -mtime +$DATE_DIFF -exec touch {} \;
 
             aws cloudformation package --s3-bucket lambda-function-deployment-${AWS_DEFAULT_REGION} --s3-prefix throwtrashskill --template-file template.yml --output-template-file packaged-template.yml
             aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides AppID=${APPID} RunLevel=${RUNLEVEL} ApiUrl=${APIURL} ReminderProductID=${REMINDER_PRODUCT_ID} --role-arn ${CloudFormationRole} --capabilities CAPABILITY_NAMED_IAM
@@ -84,4 +88,3 @@ workflows:
           context: aws-deploy
           requires:
             - setup
-
