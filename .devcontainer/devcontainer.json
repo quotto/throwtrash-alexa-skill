@@ -2,14 +2,13 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.117.1/containers/docker-existing-dockerfile
 {
 	"name": "Existing Dockerfile",
-
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "node",
 	"shutdownAction": "stopCompose",
 	"workspaceFolder": "/workspace",
 
 	// Set *default* container specific settings.json values on container create.
-	"settings": {
+	"settings": { 
 		"terminal.integrated.shell.linux": "/bin/bash"
 	},
 
