@@ -44,6 +44,40 @@ describe('Launch',()=>{
         const response = await request.send();
         expect(spyGetTrashData).toHaveBeenCalled()
         assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。他に知りたい日にち、あるいはゴミの種類を言ってください。</speak>`);
+        // supportedIntarfacesが無いのでdisplayは設定されない
+        expect(response.display()).toBeUndefined();
+    });
+    it('ディスプレイインターフェース有り',async()=>{
+        const alexa = VirtualAlexa.Builder()
+            .handler(handler)
+            .interactionModelFile(model)
+            .create();
+        alexa.dynamoDB().mock();
+
+        const request = alexa.request().launch()
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata')
+                            .set("context.System.application.applicationId", process.env.APP_ID)
+                            .set('context.System.device.supportedInterfaces["Alexa.Presentation.APL"]', {runtime: {maxVersion: '1.7'}});
+        const response = await request.send();
+        // 中身はdisplay-creatorで検証
+        expect(response.directive('Alexa.Presentation.APL.RenderDocument')).toBeDefined();
+    });
+    it('ディスプレイインターフェース無し（supportedIntarfacesがDisplay）',async()=>{
+        const alexa = VirtualAlexa.Builder()
+            .handler(handler)
+            .interactionModelFile(model)
+            .create();
+        alexa.dynamoDB().mock();
+
+        const request = alexa.request().launch()
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata')
+                            .set("context.System.application.applicationId", process.env.APP_ID)
+                            .set('context.System.device.supportedInterfaces.Display', {runtime: {maxVersion: '1.7'}});
+        const response = await request.send();
+        // 中身はdisplay-creatorで検証
+        expect(response.directive('Alexa.Presentation.APL.RenderDocument')).toBeUndefined();
     });
     it('Launch via RegularAction', async()=>{
         const request = alexa.request().launch()

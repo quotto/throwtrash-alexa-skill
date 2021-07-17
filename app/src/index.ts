@@ -1,7 +1,6 @@
 import {client, TrashData} from "trash-common"
 import {DisplayCreator} from "./display-creator"
 
-// const Alexa = require('ask-sdk');
 import  { Skill, SkillBuilders, DefaultApiClient, HandlerInput, ResponseBuilder  } from 'ask-sdk-core'
 import {services,RequestEnvelope,IntentRequest, interfaces} from 'ask-sdk-model'
 import { DynamoDBAdapter } from "./dynamodb-adapter";
@@ -39,8 +38,8 @@ const init = async (handlerInput: HandlerInput,option: any)=>{
             let upsServiceClient: services.ups.UpsServiceClient|null = null;
         try {
             upsServiceClient = serviceClientFactory ? serviceClientFactory.getUpsServiceClient() : null;
-        } catch(e) {
-            logger.error(e)
+        } catch(err) {
+            logger.error(err)
         }
         // タイムゾーン取得後にclientインスタンスを生成
         return (deviceId && upsServiceClient ?
@@ -102,6 +101,19 @@ const setUpSellMessage = async(handlerInput: HandlerInput, responseBuilder: Resp
         }
     }
     return false;
+}
+
+/**
+ *
+ * RequestEnvelopeからディスプレイを持つデバイスであるかどうかを判定する
+ *
+ * @param requestEnvelope Alexaデバイスから受け取ったRequestEnvelope
+ * @returns ディスプレイを持つデバイスの場合:true, それ以外:false
+ */
+const isSupportedAPL = function(requestEnvelope: RequestEnvelope): Boolean {
+    const device = requestEnvelope.context.System.device;
+    return device != undefined && device.supportedInterfaces != undefined &&
+            device.supportedInterfaces!["Alexa.Presentation.APL"] != undefined;
 }
 
 let skill: Skill;
@@ -166,7 +178,7 @@ const LaunchRequestHandler = {
         const second = all[1];
         const third = all[2];
 
-        if (requestEnvelope.context.System.device?.supportedInterfaces.Display) {
+        if (isSupportedAPL(requestEnvelope)) {
             const schedule_directive = displayCreator.getThrowTrashesDirective(0, [
                 { data: first, date: tsService.calculateLocalTime(0) },
                 { data: second, date: tsService.calculateLocalTime(1) },
@@ -238,7 +250,7 @@ const GetPointDayTrashesHandler = {
             const second = all[1];
             const third = all[2];
             responseBuilder.speak(textCreator.getPointdayResponse(String(slotValue), first!));
-            if (requestEnvelope.context.System.device?.supportedInterfaces.Display) {
+            if (isSupportedAPL(requestEnvelope)) {
                 const schedule_directive = displayCreator.getThrowTrashesDirective(target_day, [
                     { data: first, date: tsService.calculateLocalTime(target_day) },
                     { data: second, date: tsService.calculateLocalTime(target_day + 1) },
@@ -286,7 +298,7 @@ const GetRegisteredContent = {
                     .getResponse();
             }
             const schedule_data = textCreator.getAllSchedule(trash_result.response!);
-            if (requestEnvelope.context.System.device?.supportedInterfaces.Display) {
+            if (isSupportedAPL(requestEnvelope)) {
                 responseBuilder.addDirective(
                     displayCreator.getShowScheduleDirective(schedule_data)
                 ).withShouldEndSession(true);
