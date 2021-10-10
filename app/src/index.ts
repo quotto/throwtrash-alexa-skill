@@ -176,17 +176,15 @@ const LaunchRequestHandler = {
                 .getResponse();
         }
 
-        // 午後であれば明日のゴミ出し予定を答える
-        const offset = tsService.calculateLocalTime(0).getHours() >= 12 ? 1 : 0;
         const promise_list = [
-            tsService.checkEnableTrashes(data?.response!, 0+offset),
-            tsService.checkEnableTrashes(data?.response!, 1+offset),
-            tsService.checkEnableTrashes(data?.response!, 2+offset)
+            tsService.checkEnableTrashes(data?.response!, 0),
+            tsService.checkEnableTrashes(data?.response!, 1),
+            tsService.checkEnableTrashes(data?.response!, 2)
         ];
-        const all = await Promise.all(promise_list);
-        const first = all[0];
-        const second = all[1];
-        const third = all[2];
+        const threedaysTrashSchedule = await Promise.all(promise_list);
+        const first = threedaysTrashSchedule[0];
+        const second = threedaysTrashSchedule[1];
+        const third = threedaysTrashSchedule[2];
 
         if (isSupportedAPL(requestEnvelope)) {
             const schedule_directive = displayCreator.getThrowTrashesDirective(0, [
@@ -197,17 +195,25 @@ const LaunchRequestHandler = {
             responseBuilder.addDirective(schedule_directive).withShouldEndSession(true);
         }
 
-        const base_message:string = textCreator.getPointdayResponse(String(offset),first);
 
         const request: any = handlerInput.requestEnvelope.request
         const metadata: any = request.metadata;
         if (metadata && metadata.referrer === 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler') {
+            // 定型アクションから起動した場合
+
+            // 午後であれば明日のゴミ出し予定を答える
+            const offset = tsService.calculateLocalTime(0).getHours() >= 12 ? 1 : 0;
+            const base_message:string = textCreator.getPointdayResponse(String(offset),threedaysTrashSchedule[offset]);
+
             logger.debug("From Regular Action");
             responseBuilder.speak(base_message);
             responseBuilder.withShouldEndSession(true);
         } else if (!await setUpSellMessage(handlerInput, responseBuilder)) {
+            // 通常の起動
             logger.debug("Reprompt");
+            const base_message:string = textCreator.getPointdayResponse("0",first);
             const reprompt_message = textCreator.getMessage("NOTICE_CONTINUE")
+
             // アップセルを行わなければrepromptする
             responseBuilder.speak(base_message + reprompt_message).reprompt(reprompt_message);
         }
@@ -248,10 +254,6 @@ const GetPointDayTrashesHandler = {
             let target_day = 0;
             if (slotValue >= 0 && slotValue <= 2) {
                 target_day = PointDayValue[slotValue].value;
-                if(target_day === 0 && (tsService.calculateLocalTime(0).getHours() >= 12)) {
-                    target_day = 1;
-                    slotValue = target_day;
-                }
             } else {
                 target_day = tsService.getTargetDayByWeekday(PointDayValue[slotValue].weekday!) || 0;
             }

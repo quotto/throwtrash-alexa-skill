@@ -64,7 +64,7 @@ describe('Launch',()=>{
                             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
         expect(spyGetTrashData).toHaveBeenCalled()
-        assert.equal(response.prompt(), `<speak>あした出せるゴミは、もえるゴミ、です。他に知りたい日にち、あるいはゴミの種類を言ってください。</speak>`);
+        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。他に知りたい日にち、あるいはゴミの種類を言ってください。</speak>`);
         // supportedIntarfacesが無いのでdisplayは設定されない
         expect(response.display()).toBeUndefined();
     });
@@ -100,7 +100,7 @@ describe('Launch',()=>{
         // 中身はdisplay-creatorで検証
         expect(response.directive('Alexa.Presentation.APL.RenderDocument')).toBeUndefined();
     });
-    it('定型アクションで起動', async()=>{
+    it('定型アクションで起動-午前', async()=>{
         const request = alexa.request().launch()
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata')
@@ -108,6 +108,16 @@ describe('Launch',()=>{
                             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
         assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
+    });
+    it('定型アクションで起動-午後', async()=>{
+         jest.spyOn(Date, "now").mockReturnValue(1554292800000); // 2019-04-03(Wed) 12:00:00 UTC
+        const request = alexa.request().launch()
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata')
+                            .set('request.metadata.referrer', 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler')
+                            .set("context.System.application.applicationId", process.env.APP_ID)
+        const response = await request.send();
+        assert.equal(response.prompt(), `<speak>あした出せるゴミは、もえるゴミ、です。</speak>`);
     });
 });
 
@@ -474,7 +484,7 @@ describe("GetPointDayTrashes",()=>{
                             }])
         const response = await request.send();
         expect(spyGetTrashData).toHaveBeenCalled()
-        assert.equal(response.prompt(), `<speak>あした出せるゴミは、もえるゴミ、です。</speak>`);
+        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
         // supportedIntarfacesが無いのでdisplayは設定されない
         expect(response.display()).toBeUndefined();
     });
