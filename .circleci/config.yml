@@ -27,7 +27,7 @@ jobs:
           command: |
             sudo npm install -g ask-cli@2.1.1 --unsafe-perm
             mkdir -p ~/.ask
-            MecabAPI_URL=${MecabAPI_URL}/test
+            MecabAPI_URL=http://${MecabAPI_URL}
             echo "${ASK_CLI_CONFIG}" > ~/.ask/cli_config
             export APP_ID=$APPID
             npm test
@@ -60,13 +60,12 @@ jobs:
           at: ~/checkout/app
       - deploy:
           command: |
+            APIURL=http://${MecabAPI_URL}
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
               RUNLEVEL="INFO"
-              APIURL=${MecabAPI_URL}/production
               AWS_DEFAULT_REGION=${PRODUCTION_REGION}
             else
               RUNLEVEL="DEBUG"
-              APIURL=${MecabAPI_URL}/test
               AWS_DEFAULT_REGION=${TEST_REGION}
             fi
 
