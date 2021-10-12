@@ -17,26 +17,47 @@ const assert = require('assert');
 
 
 describe('Launch',()=>{
-    const spyCalc = jest.spyOn(client.TrashScheduleService.prototype, "calculateLocalTime").mockReturnValue(new Date(1554298037605));
-    const spyGetTrashData = jest.spyOn(client.TrashScheduleService.prototype, "getTrashData").mockImplementation((access_token: string)=> {return new Promise(resolve => {
-            resolve({
-                status: 'sccess',
-                response: [{ "type": "bin", "schedules": [{ "type": "biweek", "value": "3-4" }, { "type": "weekday", "value": "4" }, { "type": "none", "value": "" }] }, { "type": "can", "schedules": [{ "type": "weekday", "value": "3" }, { "type": "month", "value": "26" }, { "type": "none", "value": "" }] }]
-            });
-    })});
+    let spyCalc: any;
+    let spyGetTrashData: any;
+    beforeEach(()=>{
+         spyCalc = jest.spyOn(Date,"now").mockReturnValue(1554253200000); // 2019-04-03(Wed) 01:00:00 UTC
+         spyGetTrashData = jest.spyOn(client.TrashScheduleService.prototype, "getTrashData").mockImplementation((access_token: string)=> {return new Promise(resolve => {
+                resolve({
+                    status: 'sccess',
+                    response: [
+                        { "type": "can", "schedules": [{ "type": "weekday", "value": "3" }, { "type": "month", "value": "26" }, { "type": "none", "value": "" }] },
+                        { "type": "burn", "schedules": [{ "type": "weekday", "value": "4" }, { "type": "month", "value": "26" }, { "type": "none", "value": "" }] }]
+                });
+        })});
+    });
+    afterEach(()=>{
+        jest.restoreAllMocks();
+    })
     const alexa = VirtualAlexa.Builder()
         .handler(handler)
         .interactionModelFile(model)
         .create();
     alexa.dynamoDB().mock();
-    it('Launch without accesstoken', async ()=>{
+    it('アクセストークン無しで起動', async ()=>{
         const request = alexa.request().launch()
             .set('request.locale', 'ja-JP')
             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
         assert.equal(response.prompt(), `<speak>このスキルではごみ出し予定の登録のためにアカウントリンクが必要です。Alexaアプリのホーム画面に表示されたアカウントリンク用カードから、設定を行ってください。</speak>`);
     });
-    it('Launch with accesstoken', async()=>{
+    it('アクセストークン有りで起動-午前中', async()=>{
+        const request = alexa.request().launch()
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata')
+                            .set("context.System.application.applicationId", process.env.APP_ID)
+        const response = await request.send();
+        expect(spyGetTrashData).toHaveBeenCalled()
+        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。他に知りたい日にち、あるいはゴミの種類を言ってください。</speak>`);
+        // supportedIntarfacesが無いのでdisplayは設定されない
+        expect(response.display()).toBeUndefined();
+    });
+    it('アクセストークン有りで起動-午後', async()=>{
+         jest.spyOn(Date, "now").mockReturnValue(1554292800000); // 2019-04-03(Wed) 12:00:00 UTC
         const request = alexa.request().launch()
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata')
@@ -79,7 +100,7 @@ describe('Launch',()=>{
         // 中身はdisplay-creatorで検証
         expect(response.directive('Alexa.Presentation.APL.RenderDocument')).toBeUndefined();
     });
-    it('Launch via RegularAction', async()=>{
+    it('定型アクションで起動-午前', async()=>{
         const request = alexa.request().launch()
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata')
@@ -88,10 +109,16 @@ describe('Launch',()=>{
         const response = await request.send();
         assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
     });
-    afterAll(()=>{
-        spyCalc.mockRestore()
-        spyGetTrashData.mockRestore()
-    })
+    it('定型アクションで起動-午後', async()=>{
+         jest.spyOn(Date, "now").mockReturnValue(1554292800000); // 2019-04-03(Wed) 12:00:00 UTC
+        const request = alexa.request().launch()
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata')
+                            .set('request.metadata.referrer', 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler')
+                            .set("context.System.application.applicationId", process.env.APP_ID)
+        const response = await request.send();
+        assert.equal(response.prompt(), `<speak>あした出せるゴミは、もえるゴミ、です。</speak>`);
+    });
 });
 
 describe('GetDayFromTrashes',()=>{
@@ -391,4 +418,121 @@ describe('GetDayFromTrashes',()=>{
         spyCalc.mockRestore()
         spyGetTrashData.mockClear()
     })
+});
+
+describe("GetPointDayTrashes",()=>{
+    let spyGetTrashData: any;
+    beforeEach(()=>{
+         jest.spyOn(Date,"now").mockReturnValue(1554253200000); // 2019-04-03(Wed) 01:00:00 UTC
+         spyGetTrashData = jest.spyOn(client.TrashScheduleService.prototype, "getTrashData").mockImplementation((access_token: string)=> {return new Promise(resolve => {
+                resolve({
+                    status: 'sccess',
+                    response: [
+                        { "type": "can", "schedules": [{ "type": "weekday", "value": "3" }, { "type": "month", "value": "26" }, { "type": "none", "value": "" }] },
+                        { "type": "burn", "schedules": [{ "type": "weekday", "value": "4" }, { "type": "month", "value": "26" }, { "type": "none", "value": "" }] }]
+                });
+        })});
+    });
+    afterEach(()=>{
+        jest.restoreAllMocks();
+    })
+    const alexa = VirtualAlexa.Builder()
+        .handler(handler)
+        .interactionModelFile(model)
+        .create();
+    alexa.dynamoDB().mock();
+    it('今日出せるゴミ-午前中', async()=>{
+        const request = alexa.request().intent("GetPointDayTrashes")
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata')
+                            .set("context.System.application.applicationId", process.env.APP_ID)
+                            .set("request.intent.slots.DaySlot.resolutions.resolutionsPerAuthority",[{
+                                status: {
+                                    code: "ER_SUCCESS_MATCH"
+                                },
+                                values: [
+                                    {
+                                        value: {
+                                            id: 0
+                                        }
+                                    }
+                                ]
+                            }])
+        const response = await request.send();
+        expect(spyGetTrashData).toHaveBeenCalled()
+        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
+        // supportedIntarfacesが無いのでdisplayは設定されない
+        expect(response.display()).toBeUndefined();
+    });
+    it('今日出せるゴミ-午後', async()=>{
+        jest.spyOn(Date, "now").mockReturnValue(1554292800000); // 2019-04-03(Wed) 12:00:00 UTC
+        const request = alexa.request().intent("GetPointDayTrashes")
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata')
+                            .set("context.System.application.applicationId", process.env.APP_ID)
+                            .set("request.intent.slots.DaySlot.resolutions.resolutionsPerAuthority",[{
+                                status: {
+                                    code: "ER_SUCCESS_MATCH"
+                                },
+                                values: [
+                                    {
+                                        value: {
+                                            id: 0
+                                        }
+                                    }
+                                ]
+                            }])
+        const response = await request.send();
+        expect(spyGetTrashData).toHaveBeenCalled()
+        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
+        // supportedIntarfacesが無いのでdisplayは設定されない
+        expect(response.display()).toBeUndefined();
+    });
+    it('あした出せるゴミ-午前中', async()=>{
+        const request = alexa.request().intent("GetPointDayTrashes")
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata')
+                            .set("context.System.application.applicationId", process.env.APP_ID)
+                            .set("request.intent.slots.DaySlot.resolutions.resolutionsPerAuthority",[{
+                                status: {
+                                    code: "ER_SUCCESS_MATCH"
+                                },
+                                values: [
+                                    {
+                                        value: {
+                                            id: 1
+                                        }
+                                    }
+                                ]
+                            }])
+        const response = await request.send();
+        expect(spyGetTrashData).toHaveBeenCalled()
+        assert.equal(response.prompt(), `<speak>あした出せるゴミは、もえるゴミ、です。</speak>`);
+        // supportedIntarfacesが無いのでdisplayは設定されない
+        expect(response.display()).toBeUndefined();
+    });
+    it('あした出せるゴミ-午後', async()=>{
+        jest.spyOn(Date, "now").mockReturnValue(1554292800000); // 2019-04-03(Wed) 12:00:00 UTC
+        const request = alexa.request().intent("GetPointDayTrashes")
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata')
+                            .set("context.System.application.applicationId", process.env.APP_ID)
+                            .set("request.intent.slots.DaySlot.resolutions.resolutionsPerAuthority",[{
+                                status: {
+                                    code: "ER_SUCCESS_MATCH"
+                                },
+                                values: [
+                                    {
+                                        value: {
+                                            id: 1
+                                        }
+                                    }
+                                ]
+                            }])
+        const response = await request.send();
+        expect(spyGetTrashData).toHaveBeenCalled()
+        assert.equal(response.prompt(), `<speak>あした出せるゴミは、もえるゴミ、です。</speak>`);
+        // supportedIntarfacesが無いのでdisplayは設定されない
+        expect(response.display()).toBeUndefined();
+    });
 })

@@ -26,9 +26,16 @@ const PointDayValue = [
 
 const persistenceAdapter = new S3PersistenceAdapter({bucketName: `throwtrash-skill-preference-${process.env.APP_REGION}`});
 
+interface ClientInfo {
+    locale: string,
+    timezone: string
+}
+const CINFO: ClientInfo = {locale: '', timezone: ''};
+
 const init = async (handlerInput: HandlerInput,option: any)=>{
     const { requestEnvelope, serviceClientFactory } = handlerInput;
     const locale: string = requestEnvelope.request.locale || "utc";
+    CINFO.locale = locale;
     textCreator = new client.TextCreator(locale);
     if(option.display) {
         displayCreator = new DisplayCreator(locale);
@@ -45,6 +52,7 @@ const init = async (handlerInput: HandlerInput,option: any)=>{
         return (deviceId && upsServiceClient ?
             upsServiceClient.getSystemTimeZone(deviceId) : new Promise(resolve => { resolve('Asia/Tokyo') })
         ).then((timezone: any)=>{
+            CINFO.timezone = timezone;
             logger.debug('timezone:'+timezone);
             tsService =  new client.TrashScheduleService(timezone, textCreator, new DynamoDBAdapter());
         });
@@ -159,7 +167,6 @@ const LaunchRequestHandler = {
                 .withLinkAccountCard()
                 .getResponse();
         }
-        // const get_trash_ready = Client.getTrashData(accessToken);
         await init_ready
         const data: GetTrashDataResult | undefined = await tsService.getTrashData(accessToken)
         if (data.status === 'error') {
@@ -168,15 +175,16 @@ const LaunchRequestHandler = {
                 .withShouldEndSession(true)
                 .getResponse();
         }
+
         const promise_list = [
             tsService.checkEnableTrashes(data?.response!, 0),
             tsService.checkEnableTrashes(data?.response!, 1),
             tsService.checkEnableTrashes(data?.response!, 2)
         ];
-        const all = await Promise.all(promise_list);
-        const first = all[0];
-        const second = all[1];
-        const third = all[2];
+        const threedaysTrashSchedule = await Promise.all(promise_list);
+        const first = threedaysTrashSchedule[0];
+        const second = threedaysTrashSchedule[1];
+        const third = threedaysTrashSchedule[2];
 
         if (isSupportedAPL(requestEnvelope)) {
             const schedule_directive = displayCreator.getThrowTrashesDirective(0, [
@@ -186,18 +194,28 @@ const LaunchRequestHandler = {
             ])
             responseBuilder.addDirective(schedule_directive).withShouldEndSession(true);
         }
-        responseBuilder.speak(textCreator.getLaunchResponse(first!));
+
 
         const request: any = handlerInput.requestEnvelope.request
         const metadata: any = request.metadata;
         if (metadata && metadata.referrer === 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler') {
+            // 定型アクションから起動した場合
+
+            // 午後であれば明日のゴミ出し予定を答える
+            const offset = tsService.calculateLocalTime(0).getHours() >= 12 ? 1 : 0;
+            const base_message:string = textCreator.getPointdayResponse(String(offset),threedaysTrashSchedule[offset]);
+
             logger.debug("From Regular Action");
+            responseBuilder.speak(base_message);
             responseBuilder.withShouldEndSession(true);
         } else if (!await setUpSellMessage(handlerInput, responseBuilder)) {
+            // 通常の起動
             logger.debug("Reprompt");
+            const base_message:string = textCreator.getPointdayResponse("0",first);
             const reprompt_message = textCreator.getMessage("NOTICE_CONTINUE")
+
             // アップセルを行わなければrepromptする
-            responseBuilder.speak(textCreator.getLaunchResponse(first!) + reprompt_message).reprompt(reprompt_message);
+            responseBuilder.speak(base_message + reprompt_message).reprompt(reprompt_message);
         }
         return responseBuilder.getResponse();
     }
@@ -222,7 +240,7 @@ const GetPointDayTrashesHandler = {
         const intentRequest: IntentRequest = requestEnvelope.request as IntentRequest
         const resolutions = intentRequest.intent.slots?.DaySlot.resolutions;
         if(resolutions && resolutions.resolutionsPerAuthority && resolutions.resolutionsPerAuthority[0].status.code === 'ER_SUCCESS_MATCH') {
-            const slotValue = Number(resolutions.resolutionsPerAuthority![0].values[0].value.id);
+            let slotValue = Number(resolutions.resolutionsPerAuthority![0].values[0].value.id);
 
             await init_ready
             const trash_result = await tsService.getTrashData(accessToken)
