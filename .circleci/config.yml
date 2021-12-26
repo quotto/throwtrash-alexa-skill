@@ -61,7 +61,7 @@ jobs:
       - deploy:
           command: |
             APIURL=http://${MecabAPI_URL}
-            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+            if [ "${CIRCLE_BRANCH}" == "main" ]; then
               RUNLEVEL="INFO"
               AWS_DEFAULT_REGION=${PRODUCTION_REGION}
             else
