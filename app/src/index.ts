@@ -45,7 +45,7 @@ const init = async (handlerInput: HandlerInput,option: any)=>{
             let upsServiceClient: services.ups.UpsServiceClient|null = null;
         try {
             upsServiceClient = serviceClientFactory ? serviceClientFactory.getUpsServiceClient() : null;
-        } catch(err) {
+        } catch(err: any) {
             logger.error(err)
         }
         // タイムゾーン取得後にclientインスタンスを生成
@@ -77,7 +77,7 @@ const updateUserHistory = async(handlerInput: HandlerInput): Promise<number>=> {
         handlerInput.attributesManager.setPersistentAttributes(attributes);
         await handlerInput.attributesManager.savePersistentAttributes();
         return attributes.get_schedule_count;
-    }catch(err){
+    }catch(err: any){
         logger.error(err);
         return 1;
     }
@@ -104,7 +104,7 @@ const setUpSellMessage = async(handlerInput: HandlerInput, responseBuilder: Resp
                 });
                 return true;
             }
-        } catch(err) {
+        } catch(err: any) {
             logger.error(err);
         }
     }
@@ -202,7 +202,7 @@ const LaunchRequestHandler = {
             // 定型アクションから起動した場合
 
             // 午後であれば明日のゴミ出し予定を答える
-            const offset = tsService.calculateLocalTime(0).getHours() >= 12 ? 1 : 0;
+            const offset = data.checkedNextday && tsService.calculateLocalTime(0).getHours() >= 12 ? 1 : 0;
             const base_message:string = textCreator.getPointdayResponse(String(offset),threedaysTrashSchedule[offset]);
 
             logger.debug("From Regular Action");
@@ -324,7 +324,7 @@ const GetRegisteredContent = {
             const card_text = textCreator.getRegisterdContentForCard(schedule_data);
 
             return responseBuilder.speak(textCreator.getMessage("NOTICE_SEND_SCHEDULE")).withSimpleCard(textCreator.registerd_card_title, card_text).getResponse();
-        }catch(err){
+        }catch(err: any){
             logger.error(err)
             return responseBuilder.speak(textCreator.getMessage("ERROR_GENERAL")).withShouldEndSession(true).getResponse();
         }
@@ -406,7 +406,7 @@ const GetDayFromTrashTypeIntent = {
                     }
                     trash_data = tsService.getDayByTrashType([other_trashes[max_data.index]],'other');
                 }
-            } catch(error) {
+            } catch(error: any) {
                 logger.error(error);
                 return responseBuilder.speak(textCreator.getMessage("ERROR_UNKNOWN")).withShouldEndSession(true).getResponse();
             }
@@ -588,7 +588,7 @@ const PurchaseHandler = {
                     token: "correlationToken"
                 }).getResponse();
             }
-        } catch (err) {
+        } catch (err: any) {
             logger.error(err)
             return responseBuilder.speak(textCreator.getMessage("ERROR_GENERAL")).withShouldEndSession(true).getResponse()
         }

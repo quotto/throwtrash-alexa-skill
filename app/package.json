@@ -15,7 +15,7 @@
     "dateformat": "^3.0.3",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
-    "trash-common": "git+https://github.com/quotto/throwtrash-common-module.git#v2.4",
+    "trash-common": "git+https://github.com/quotto/throwtrash-common-module.git#v2.5",
     "what-the-pack": "^2.0.3"
   },
   "devDependencies": {
@@ -27,7 +27,7 @@
     "lodash": "^4.17.21",
     "mock-require": "^3.0.3",
     "ts-jest": "^26.5.6",
-    "typescript": "^3.9.10",
+    "typescript": "^4.5.4",
     "virtual-alexa": "^0.7.8"
   }
 }
