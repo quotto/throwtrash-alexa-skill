@@ -1,5 +1,5 @@
 import { AWSOptions } from 'request';
-import {client, TrashData} from 'trash-common'
+import {client, TrashData, TrashSchedule} from 'trash-common'
 import {DynamoDB} from 'aws-sdk'
 const dynamoClient: DynamoDB.DocumentClient  = new DynamoDB.DocumentClient({region: process.env.APP_REGION});
 import crypto = require("crypto")
@@ -29,7 +29,7 @@ export class DynamoDBAdapter implements client.DBAdapter{
                 throw new Error("Failed getUserIDByAccessToken");
             })
     }
-    getTrashSchedule(user_id: string): Promise<TrashData[]> {
+    getTrashSchedule(user_id: string): Promise<TrashSchedule> {
         const params = {
             TableName: 'TrashSchedule',
             Key: {
@@ -38,10 +38,17 @@ export class DynamoDBAdapter implements client.DBAdapter{
         };
         return dynamoClient.get(params).promise().then((data: DynamoDB.DocumentClient.GetItemOutput) => {
             if (data.Item) {
-                return JSON.parse(data.Item.description)
+                const checkedNextday = typeof(data.Item.nextdayflag) != "undefined" ? data.Item.nextdayflag : true;
+                return {
+                    trashData: JSON.parse(data.Item.description),
+                    checkedNextday: checkedNextday
+                }
             }
             console.error(`User Not Found(AccessToken: ${user_id})`);
-            return []
+            return {
+                trashData: [],
+                checkedNextday: false
+            }
         }).catch((err: Error) => {
             console.error(err)
             throw new Error("Failed GetTrashSchedule")

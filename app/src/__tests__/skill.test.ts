@@ -22,12 +22,17 @@ describe('Launch',()=>{
     beforeEach(()=>{
          spyCalc = jest.spyOn(Date,"now").mockReturnValue(1554253200000); // 2019-04-03(Wed) 01:00:00 UTC
          spyGetTrashData = jest.spyOn(client.TrashScheduleService.prototype, "getTrashData").mockImplementation((access_token: string)=> {return new Promise(resolve => {
-                resolve({
-                    status: 'sccess',
-                    response: [
-                        { "type": "can", "schedules": [{ "type": "weekday", "value": "3" }, { "type": "month", "value": "26" }, { "type": "none", "value": "" }] },
-                        { "type": "burn", "schedules": [{ "type": "weekday", "value": "4" }, { "type": "month", "value": "26" }, { "type": "none", "value": "" }] }]
-                });
+            let checkedNextday = true;
+            if (access_token === 'testdata_with_checkedNextday_false') {
+                checkedNextday = false;
+            }
+            resolve({
+                status: 'sccess',
+                response: [
+                    { "type": "can", "schedules": [{ "type": "weekday", "value": "3" }, { "type": "month", "value": "26" }, { "type": "none", "value": "" }] },
+                    { "type": "burn", "schedules": [{ "type": "weekday", "value": "4" }, { "type": "month", "value": "26" }, { "type": "none", "value": "" }] }],
+                checkedNextday: checkedNextday
+            });
         })});
     });
     afterEach(()=>{
@@ -100,7 +105,7 @@ describe('Launch',()=>{
         // 中身はdisplay-creatorで検証
         expect(response.directive('Alexa.Presentation.APL.RenderDocument')).toBeUndefined();
     });
-    it('定型アクションで起動-午前', async()=>{
+    it('定型アクションで起動-午前-nextdayflagがTrue', async()=>{
         const request = alexa.request().launch()
                             .set('request.locale', 'ja-JP')
                             .set('session.user.accessToken','testdata')
@@ -109,7 +114,7 @@ describe('Launch',()=>{
         const response = await request.send();
         assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
     });
-    it('定型アクションで起動-午後', async()=>{
+    it('定型アクションで起動-午後-nextdayflagがTrue', async()=>{
          jest.spyOn(Date, "now").mockReturnValue(1554292800000); // 2019-04-03(Wed) 12:00:00 UTC
         const request = alexa.request().launch()
                             .set('request.locale', 'ja-JP')
@@ -118,6 +123,25 @@ describe('Launch',()=>{
                             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
         assert.equal(response.prompt(), `<speak>あした出せるゴミは、もえるゴミ、です。</speak>`);
+    });
+    it('定型アクションで起動-午前-nextdayflagがFalse', async()=>{
+        const request = alexa.request().launch()
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata_with_checkedNextday_false')
+                            .set('request.metadata.referrer', 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler')
+                            .set("context.System.application.applicationId", process.env.APP_ID)
+        const response = await request.send();
+        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
+    });
+    it('定型アクションで起動-午後-nextdayflagがFalse', async()=>{
+         jest.spyOn(Date, "now").mockReturnValue(1554292800000); // 2019-04-03(Wed) 12:00:00 UTC
+        const request = alexa.request().launch()
+                            .set('request.locale', 'ja-JP')
+                            .set('session.user.accessToken','testdata_with_checkedNextday_false')
+                            .set('request.metadata.referrer', 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler')
+                            .set("context.System.application.applicationId", process.env.APP_ID)
+        const response = await request.send();
+        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
     });
 });
 
