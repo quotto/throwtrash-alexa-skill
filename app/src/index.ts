@@ -198,25 +198,14 @@ const LaunchRequestHandler = {
 
         const request: any = handlerInput.requestEnvelope.request
         const metadata: any = request.metadata;
-        if (metadata && metadata.referrer === 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler') {
-            // 定型アクションから起動した場合
 
-            // 午後であれば明日のゴミ出し予定を答える
-            const offset = data.checkedNextday && tsService.calculateLocalTime(0).getHours() >= 12 ? 1 : 0;
-            const base_message:string = textCreator.getPointdayResponse(String(offset),threedaysTrashSchedule[offset]);
+        // 午後であれば明日のゴミ出し予定を答える
+        const offset = data.checkedNextday && tsService.calculateLocalTime(0).getHours() >= 12 ? 1 : 0;
+        const base_message: string = textCreator.getPointdayResponse(String(offset), threedaysTrashSchedule[offset]);
 
-            logger.debug("From Regular Action");
-            responseBuilder.speak(base_message);
-            responseBuilder.withShouldEndSession(true);
-        } else if (!await setUpSellMessage(handlerInput, responseBuilder)) {
-            // 通常の起動
-            logger.debug("Reprompt");
-            const base_message:string = textCreator.getPointdayResponse("0",first);
-            const reprompt_message = textCreator.getMessage("NOTICE_CONTINUE")
-
-            // アップセルを行わなければrepromptする
-            responseBuilder.speak(base_message + reprompt_message).reprompt(reprompt_message);
-        }
+        logger.debug("From Regular Action");
+        responseBuilder.speak(base_message);
+        responseBuilder.withShouldEndSession(true);
         return responseBuilder.getResponse();
     }
 };
