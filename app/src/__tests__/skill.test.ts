@@ -57,7 +57,7 @@ describe('Launch',()=>{
                             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
         expect(spyGetTrashData).toHaveBeenCalled()
-        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。他に知りたい日にち、あるいはゴミの種類を言ってください。</speak>`);
+        expect(response.prompt()).toBe(`<speak>今日出せるゴミは、カン、です。</speak>`);
         // supportedIntarfacesが無いのでdisplayは設定されない
         expect(response.display()).toBeUndefined();
     });
@@ -65,11 +65,11 @@ describe('Launch',()=>{
          jest.spyOn(Date, "now").mockReturnValue(1554292800000); // 2019-04-03(Wed) 12:00:00 UTC
         const request = alexa.request().launch()
                             .set('request.locale', 'ja-JP')
-                            .set('session.user.accessToken','testdata')
+                            .set('session.user.accessToken','testdata_with_checkedNextday_false')
                             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
         expect(spyGetTrashData).toHaveBeenCalled()
-        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。他に知りたい日にち、あるいはゴミの種類を言ってください。</speak>`);
+        expect(response.prompt()).toBe(`<speak>今日出せるゴミは、カン、です。</speak>`);
         // supportedIntarfacesが無いのでdisplayは設定されない
         expect(response.display()).toBeUndefined();
     });
@@ -112,7 +112,7 @@ describe('Launch',()=>{
                             .set('request.metadata.referrer', 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler')
                             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
-        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
+        expect(response.prompt()).toBe(`<speak>今日出せるゴミは、カン、です。</speak>`);
     });
     it('定型アクションで起動-午後-nextdayflagがTrue', async()=>{
          jest.spyOn(Date, "now").mockReturnValue(1554292800000); // 2019-04-03(Wed) 12:00:00 UTC
@@ -122,7 +122,7 @@ describe('Launch',()=>{
                             .set('request.metadata.referrer', 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler')
                             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
-        assert.equal(response.prompt(), `<speak>あした出せるゴミは、もえるゴミ、です。</speak>`);
+        expect(response.prompt()).toBe(`<speak>あした出せるゴミは、もえるゴミ、です。</speak>`);
     });
     it('定型アクションで起動-午前-nextdayflagがFalse', async()=>{
         const request = alexa.request().launch()
@@ -131,7 +131,7 @@ describe('Launch',()=>{
                             .set('request.metadata.referrer', 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler')
                             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
-        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
+        expect(response.prompt()).toBe(`<speak>今日出せるゴミは、カン、です。</speak>`);
     });
     it('定型アクションで起動-午後-nextdayflagがFalse', async()=>{
          jest.spyOn(Date, "now").mockReturnValue(1554292800000); // 2019-04-03(Wed) 12:00:00 UTC
@@ -141,7 +141,7 @@ describe('Launch',()=>{
                             .set('request.metadata.referrer', 'amzn1.alexa-speechlet-client.SequencedSimpleIntentHandler')
                             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
-        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
+        expect(response.prompt()).toBe(`<speak>今日出せるゴミは、カン、です。</speak>`);
     });
 });
 
@@ -202,7 +202,7 @@ describe('GetDayFromTrashes',()=>{
                 .set("context.System.application.applicationId", process.env.APP_ID)
             const response = await request.send();
             // レスポンスは一致した登録データのtrash_val
-            assert.equal(response.prompt(), '<speak>次に野菜ジュースを出せるのは4月9日 火曜日です。</speak>');
+            expect(response.prompt()).toBe('<speak>次に野菜ジュースを出せるのは4月9日 火曜日です。</speak>');
         } finally {
             spyCompare.mockRestore()
         }
@@ -227,7 +227,7 @@ describe('GetDayFromTrashes',()=>{
                 .set("context.System.application.applicationId", process.env.APP_ID)
             const response = await request.send();
             // レスポンスは発話したゴミの名前
-            assert.equal(response.prompt(), '<speak>データ上には存在しないゴミはごみ出し予定に登録されていません。</speak>');
+            expect(response.prompt()).toBe('<speak>データ上には存在しないゴミはごみ出し予定に登録されていません。</speak>');
         } finally {
             spyCompare.mockRestore()
         }
@@ -252,7 +252,7 @@ describe('GetDayFromTrashes',()=>{
                 .set("context.System.application.applicationId", process.env.APP_ID)
             const response = await request.send();
             // レスポンスは登録データotherのtrash_val
-            assert.equal(response.prompt(), '<speak>次に不燃ごみを出せるのは4月9日 火曜日です。</speak>');
+            expect(response.prompt()).toBe('<speak>次に不燃ごみを出せるのは4月9日 火曜日です。</speak>');
         } finally {
             spyCompare.mockRestore();
         }
@@ -277,7 +277,7 @@ describe('GetDayFromTrashes',()=>{
                 .set("context.System.application.applicationId", process.env.APP_ID)
             const response = await request.send();
             // レスポンスは発話したゴミの名前
-            assert.equal(response.prompt(), '<speak>空き缶はごみ出し予定に登録されていません。</speak>');
+            expect(response.prompt()).toBe('<speak>空き缶はごみ出し予定に登録されていません。</speak>');
         } finally {
             spyCompare.mockRestore()
         }
@@ -312,7 +312,7 @@ describe('GetDayFromTrashes',()=>{
                                 .set("context.System.application.applicationId", process.env.APP_ID)
             const response = await request.send();
             // レスポンスは登録データで最も一致率が高かったデータのtrash_val
-            assert.equal(response.prompt(), '<speak>次にビンとペットボトルを出せるのは4月4日 木曜日です。</speak>');
+            expect(response.prompt()).toBe('<speak>次にビンとペットボトルを出せるのは4月4日 木曜日です。</speak>');
         } finally {
             spyCompare.mockRestore();
         }
@@ -347,7 +347,7 @@ describe('GetDayFromTrashes',()=>{
                                 .set("context.System.application.applicationId", process.env.APP_ID)
             const response = await request.send();
             // レスポンスは登録データで最も一致率が高かったデータのtrash_val、スコアが0.5より大きく0.7未満の場合は確認を入れる
-            assert.equal(response.prompt(), '<speak>不燃ごみ ですか？次に不燃ごみを出せるのは4月9日 火曜日です。</speak>');
+            expect(response.prompt()).toBe('<speak>不燃ごみ ですか？次に不燃ごみを出せるのは4月9日 火曜日です。</speak>');
         } finally {
             spyCompare.mockRestore();
         }
@@ -370,7 +370,7 @@ describe('GetDayFromTrashes',()=>{
                             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
         // レスポンスは登録データのtypeにもとづく標準名称
-        assert.equal(response.prompt(), '<speak>次に燃えるゴミを出せるのは4月9日 火曜日です。</speak>');
+        expect(response.prompt()).toBe('<speak>次に燃えるゴミを出せるのは4月9日 火曜日です。</speak>');
     });
     it('一致：登録情報がother以外で発話がスロット外r',async()=>{
         const alexa = VirtualAlexa.Builder()
@@ -390,7 +390,7 @@ describe('GetDayFromTrashes',()=>{
                             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
         // レスポンスは登録情報なし
-        assert.equal(response.prompt(), '<speak>燃えるゴミはごみ出し予定に登録されていません。</speak>');
+        expect(response.prompt()).toBe('<speak>燃えるゴミはごみ出し予定に登録されていません。</speak>');
     });
     it('一致：登録情報がotherで発話がother',async()=>{
         const alexa = VirtualAlexa.Builder()
@@ -410,7 +410,7 @@ describe('GetDayFromTrashes',()=>{
                             .set("context.System.application.applicationId", process.env.APP_ID)
         const response = await request.send();
         // レスポンスは登録情報なし
-        assert.equal(response.prompt(), '<speak>次に不燃ごみを出せるのは4月9日 火曜日、ビンとペットボトルを出せるのは4月4日 木曜日です。</speak>');
+        expect(response.prompt()).toBe('<speak>次に不燃ごみを出せるのは4月9日 火曜日、ビンとペットボトルを出せるのは4月4日 木曜日です。</speak>');
     });
 
     it('APIエラー',async ()=>{
@@ -433,7 +433,7 @@ describe('GetDayFromTrashes',()=>{
                 .set("context.System.application.applicationId", process.env.APP_ID)
             process.env.MecabAPI_URL = '';
             const response = await request.send();
-            assert.equal(response.prompt(), `<speak>エラーが発生しました。開発者にお問合せください。</speak>`);
+            expect(response.prompt()).toBe(`<speak>エラーが発生しました。開発者にお問合せください。</speak>`);
         } finally {
             spyCompare.mockRestore()
         }
@@ -484,7 +484,7 @@ describe("GetPointDayTrashes",()=>{
                             }])
         const response = await request.send();
         expect(spyGetTrashData).toHaveBeenCalled()
-        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
+        expect(response.prompt()).toBe(`<speak>今日出せるゴミは、カン、です。</speak>`);
         // supportedIntarfacesが無いのでdisplayは設定されない
         expect(response.display()).toBeUndefined();
     });
@@ -508,7 +508,7 @@ describe("GetPointDayTrashes",()=>{
                             }])
         const response = await request.send();
         expect(spyGetTrashData).toHaveBeenCalled()
-        assert.equal(response.prompt(), `<speak>今日出せるゴミは、カン、です。</speak>`);
+        expect(response.prompt()).toBe(`<speak>今日出せるゴミは、カン、です。</speak>`);
         // supportedIntarfacesが無いのでdisplayは設定されない
         expect(response.display()).toBeUndefined();
     });
@@ -531,7 +531,7 @@ describe("GetPointDayTrashes",()=>{
                             }])
         const response = await request.send();
         expect(spyGetTrashData).toHaveBeenCalled()
-        assert.equal(response.prompt(), `<speak>あした出せるゴミは、もえるゴミ、です。</speak>`);
+        expect(response.prompt()).toBe(`<speak>あした出せるゴミは、もえるゴミ、です。</speak>`);
         // supportedIntarfacesが無いのでdisplayは設定されない
         expect(response.display()).toBeUndefined();
     });
@@ -555,7 +555,7 @@ describe("GetPointDayTrashes",()=>{
                             }])
         const response = await request.send();
         expect(spyGetTrashData).toHaveBeenCalled()
-        assert.equal(response.prompt(), `<speak>あした出せるゴミは、もえるゴミ、です。</speak>`);
+        expect(response.prompt()).toBe(`<speak>あした出せるゴミは、もえるゴミ、です。</speak>`);
         // supportedIntarfacesが無いのでdisplayは設定されない
         expect(response.display()).toBeUndefined();
     });

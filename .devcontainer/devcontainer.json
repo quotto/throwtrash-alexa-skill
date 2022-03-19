@@ -2,15 +2,23 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.117.1/containers/docker-existing-dockerfile
 {
 	"name": "Existing Dockerfile",
-	"dockerComposeFile": "docker-compose.yml",
-	"service": "node",
-	"shutdownAction": "stopCompose",
 	"workspaceFolder": "/workspace",
+	"build" : {
+		"dockerfile": "Dockerfile",
+	},
+	"mounts": [
+      "source=${localEnv:USERPROFILE}/.aws,target=/root/.aws,type=bind,consistency=cached",
+      "target=/workspace/app/node_modules",
+      "target=/workspace/batch/node_modules",
+	],
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+
+
 
 	// Set *default* container specific settings.json values on container create.
-	"settings": { 
-		"terminal.integrated.shell.linux": "/bin/bash"
-	},
+	// "settings": {
+	// 	"terminal.integrated.shell.linux": "/bin/bash"
+	// },
 
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": ["dbaeumer.vscode-eslint","ms-vscode.vscode-typescript-next"],
