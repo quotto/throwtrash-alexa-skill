@@ -84,7 +84,7 @@ jobs:
       - run:
           name: versioning
           command: |
-            PUBLISH_VERSION=$(aws lambda publish-version --function-name ThrowTrashSkill | jq '.Version')
+            PUBLISH_VERSION=$(aws lambda publish-version --function-name ThrowTrashSkill | jq -r '.Version')
             echo "export PUBLISH_VERSION=${PUBLISH_VERSION}" >>  $BASH_ENV
             aws lambda add-permission --function-name ThrowTrashSkill:${PUBLISH_VERSION} --statement-id alexa --action lambda:InvokeFunction --principal alexa-appkit.amazon.com --event-source-token ${APPID}
       - run:
