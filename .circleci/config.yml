@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  aws-cli: circleci/aws-cli@0.1.16
+  aws-cli: circleci/aws-cli@2.0
 
 jobs:
   setup:
@@ -61,7 +61,7 @@ jobs:
       - deploy:
           command: |
             APIURL=http://${MecabAPI_URL}
-            if [ "${CIRCLE_BRANCH}" == "main" ]; then
+            if [ "${CIRCLE_BRANCH}" == "develop" ]; then
               RUNLEVEL="INFO"
               AWS_DEFAULT_REGION=${PRODUCTION_REGION}
             else
@@ -77,13 +77,35 @@ jobs:
             aws cloudformation package --s3-bucket lambda-function-deployment-${AWS_DEFAULT_REGION} --s3-prefix throwtrashskill --template-file template.yml --output-template-file packaged-template.yml
             aws cloudformation deploy --template-file packaged-template.yml --stack-name=ThrowTrashSkill --parameter-overrides AppID=${APPID} RunLevel=${RUNLEVEL} ApiUrl=${APIURL} ReminderProductID=${REMINDER_PRODUCT_ID} --role-arn ${CloudFormationRole} --capabilities CAPABILITY_NAMED_IAM
           working_directory: deploy
-
+  publish:
+    executor: aws-cli/default
+    steps:
+      - run:
+          name: versioning
+          command: |
+            echo "PUBLISH_VERSION=$(aws lambda publish-version --function-name ThrowTrashSkil | jq '.Version')" >>  $BASH_ENV
+            aws add-permission --function-name ThrowTrashSkill:${PUBLISH_VERSION} --statement-id alexa --action lambda:InvokeFunction --principal alexa-appkit.amazon.com --event-source-token ${APPID}
+      - run:
+          name: publish
+          command: |
+            aws lambda update-alias --function-name ThrowTrashSkill --function-version ${PUBLISH_VERSION} --name RELEASE
 workflows:
   all_build:
     jobs:
       - setup:
           context: aws-test
+          filters:
+            branches:
+              ignore: main
       - deploy:
           context: aws-deploy
           requires:
             - setup
+          filters:
+            branches:
+              ignore: main
+      - publish:
+          context: aws-deploy
+          filters:
+            branches:
+              only: main
