@@ -80,6 +80,7 @@ jobs:
   publish:
     executor: aws-cli/default
     steps:
+      - aws-cli/install
       - run:
           name: versioning
           command: |
