@@ -46,6 +46,10 @@ Resources:
               - !Sub
                 - "${PreferenceBucket}/*"
                 - {PreferenceBucket: !GetAtt PreferenceBucket.Arn}
+              - !GetAtt RequestLogBucket.Arn
+              - !Sub
+                - "${RequestLogBucket}/*"
+                - {RequestLogBucket: !GetAtt RequestLogBucket.Arn}
 
       PolicyName: !Sub "throwtrash-lambda-policy-${AWS::Region}"
       Roles:
