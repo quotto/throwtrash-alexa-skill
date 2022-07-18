@@ -15,7 +15,7 @@ export class S3RequestLogger implements RequestLogger {
             this.client.send(new PutObjectCommand({
                 Bucket: `throwtrash-skill-request-logs-${this.region}`,
                 Key: `request/${prefix}/${request.request.requestId}`,
-                Body: JSON.stringify(request.request)
+                Body: JSON.stringify(request)
             })).then(_=>{}).catch(error=>{console.error(error)});
         }
     }
@@ -24,7 +24,7 @@ export class S3RequestLogger implements RequestLogger {
             this.client.send(new PutObjectCommand({
                 Bucket: `throwtrash-skill-request-logs-${this.region}`,
                 Key: `error/${prefix}/${request.request.requestId}`,
-                Body: JSON.stringify(request.request)
+                Body: JSON.stringify(request)
             })).then(_=>{}).catch(error=>{console.error(error)});
         }
     }
