@@ -10,6 +10,7 @@
   "author": "ty",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.131.0",
     "ask-sdk": "^2.11.0",
     "ask-sdk-s3-persistence-adapter": "^2.11.0",
     "dateformat": "^3.0.3",
