@@ -8,14 +8,14 @@
 		// Append -bullseye or -buster to pin to an OS version.
 		// Use -bullseye variants on local on arm64/Apple Silicon.
 		"args": {
-			"VARIANT": "16"
+			"VARIANT": "12"
 		}
 	},
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
 	"mounts": [
       "source=${localEnv:USERPROFILE}/.aws,target=/root/.aws,type=bind,consistency=cached",
       "target=/workspace/app/node_modules",
-      "target=/workspace/batch/node_modules",
+      "target=/workspace/batch/node_modules"
 	],
 	"workspaceFolder": "/workspace",
 	"onCreateCommand": "git config --local core.editor code",
@@ -27,7 +27,7 @@
 	"extensions": [
 		"dbaeumer.vscode-eslint",
 		"ms-vscode.vscode-typescript-next"
-	],
+	]
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
