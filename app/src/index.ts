@@ -1,15 +1,18 @@
-import {client, TrashData} from "trash-common"
-import {DisplayCreator} from "./display-creator"
+import {client, TrashData} from "trash-common";
+import {DisplayCreator} from "./display-creator";
 
-import  { Skill, SkillBuilders, DefaultApiClient, HandlerInput, ResponseBuilder  } from 'ask-sdk-core'
-import {services,RequestEnvelope,IntentRequest, interfaces} from 'ask-sdk-model'
+import  { Skill, SkillBuilders, DefaultApiClient, HandlerInput, ResponseBuilder  } from 'ask-sdk-core';
+import {services,RequestEnvelope,IntentRequest, interfaces } from 'ask-sdk-model';
+import { Context } from 'aws-lambda';
 import { DynamoDBAdapter } from "./dynamodb-adapter";
 import { GetTrashDataResult, TrashScheduleService, RecentTrashDate, CompareResult } from "trash-common/dist/client";
-import { getLogger } from "trash-common"
+import { getLogger } from "trash-common";
 const {S3PersistenceAdapter} = require('ask-sdk-s3-persistence-adapter');
 let textCreator: client.TextCreator,tsService: TrashScheduleService, displayCreator: DisplayCreator
 const logger = getLogger();
-process.env.RUNLEVEL === "INFO" ? logger.setLevel_INFO() :  logger.setLevel_DEBUG()
+process.env.RUNLEVEL === "INFO" ? logger.setLevel_INFO() :  logger.setLevel_DEBUG();
+import { S3RequestLogger } from "./s3-request-logger-impl";
+import { RequestLogger } from "./request-logger";
 
 const PointDayValue = [
     {value:0},
@@ -125,7 +128,9 @@ const isSupportedAPL = function(requestEnvelope: RequestEnvelope): Boolean {
 }
 
 let skill: Skill;
-export const handler  = async function(event:RequestEnvelope ,context: any) {
+export const handler  = async function(event:RequestEnvelope ,context: Context) {
+    const requestLogger: RequestLogger = new S3RequestLogger(process.env.APP_REGION || "ap-northeast-1");
+    requestLogger.logRequest(event,context.awsRequestId);
     if(!skill) {
         skill = SkillBuilders.custom()
             .addRequestHandlers(
@@ -148,7 +153,10 @@ export const handler  = async function(event:RequestEnvelope ,context: any) {
             .withApiClient(new DefaultApiClient())
             .create();
     }
-    return skill.invoke(event,context);
+    return skill.invoke(event,context).catch(error=>{
+        console.error(error);
+        requestLogger.logErrorRequest(event,context.awsRequestId);
+    });
 };
 
 const LaunchRequestHandler = {

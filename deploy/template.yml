@@ -46,6 +46,10 @@ Resources:
               - !Sub
                 - "${PreferenceBucket}/*"
                 - {PreferenceBucket: !GetAtt PreferenceBucket.Arn}
+              - !GetAtt RequestLogBucket.Arn
+              - !Sub
+                - "${RequestLogBucket}/*"
+                - {RequestLogBucket: !GetAtt RequestLogBucket.Arn}
 
       PolicyName: !Sub "throwtrash-lambda-policy-${AWS::Region}"
       Roles:
@@ -84,6 +88,23 @@ Resources:
           Key: Purpose
           Value: Skill
     DeletionPolicy: Retain
+  RequestLogBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Sub "throwtrash-skill-request-logs-${AWS::Region}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      Tags:
+        -
+          Key: Group
+          Value: throwtrash
+        -
+          Key: Purpose
+          Value: Skill
+    DeletionPolicy: Retain
   ThrowTrashSkill:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -91,7 +112,7 @@ Resources:
       FunctionName: ThrowTrashSkill
       Handler: index.handler
       Role: !GetAtt LambdaExecRole.Arn
-      Runtime: nodejs12.x
+      Runtime: nodejs16.x
       Timeout: 30
       Environment:
         Variables:
@@ -113,7 +134,7 @@ Resources:
       Description: throwtrash-skill library
       ContentUri: ../app/libs
       CompatibleRuntimes:
-        - nodejs12.x
+        - nodejs16.x
   LambdaEvent:
     Type: "AWS::Lambda::Permission"
     Properties:
