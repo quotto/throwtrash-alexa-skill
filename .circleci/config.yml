@@ -5,7 +5,7 @@ orbs:
 jobs:
   setup:
     docker:
-      - image: circleci/node:12.1.0
+      - image: circleci/node:16.13.0
     working_directory: ~/checkout
     steps:
       - checkout
