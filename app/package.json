@@ -14,6 +14,7 @@
     "@types/aws-lambda": "^8.10.101",
     "ask-sdk": "^2.11.0",
     "ask-sdk-s3-persistence-adapter": "^2.11.0",
+    "axios": "^1.3.4",
     "dateformat": "^3.0.3",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
