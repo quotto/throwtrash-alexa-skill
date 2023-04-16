@@ -2,32 +2,33 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.224.3/containers/typescript-node
 {
 	"name": "Node.js & TypeScript",
-	"build": {
-		"dockerfile": "Dockerfile",
-		// Update 'VARIANT' to pick a Node version: 16, 14, 12.
-		// Append -bullseye or -buster to pin to an OS version.
-		// Use -bullseye variants on local on arm64/Apple Silicon.
-		"args": {
-			"VARIANT": "12"
-		}
-	},
+	// "build": {
+	// 	"dockerfile": "Dockerfile",
+	// 	// Update 'VARIANT' to pick a Node version: 16, 14, 12.
+	// 	// Append -bullseye or -buster to pin to an OS version.
+	// 	// Use -bullseye variants on local on arm64/Apple Silicon.
+	// 	"args": {
+	// 		"VARIANT": "12"
+	// 	}
+	// },
+	"image": "mcr.microsoft.com/vscode/devcontainers/typescript-node:0-16",
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
 	"mounts": [
-      "source=${localEnv:USERPROFILE}/.aws,target=/root/.aws,type=bind,consistency=cached",
+      "source=${localEnv:HOME}/.aws,target=/root/.aws,type=bind,consistency=cached",
       "target=/workspace/app/node_modules",
       "target=/workspace/batch/node_modules"
 	],
 	"workspaceFolder": "/workspace",
-	"onCreateCommand": "git config --local core.editor code",
-	// Set *default* container specific settings.json values on container create.
-	"settings": {},
-
-
+	"postCreateCommand": "git config --local core.editor code",
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 		"dbaeumer.vscode-eslint",
-		"ms-vscode.vscode-typescript-next"
-	]
+		"ms-vscode.vscode-typescript-next",
+		"TabNine.tabnine-vscode"
+	],
+	"features": {
+		"ghcr.io/devcontainers/features/git:1":"1.1.5"
+	}
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
