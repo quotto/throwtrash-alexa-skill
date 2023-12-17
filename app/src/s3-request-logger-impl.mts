@@ -1,6 +1,6 @@
-import { RequestLogger } from "./request-logger";
-import { S3Client,PutObjectCommand,PutObjectCommandInput,PutObjectCommandOutput } from "@aws-sdk/client-s3";
-import { RequestEnvelope } from 'ask-sdk-model';
+import { RequestLogger } from "./request-logger.mjs";
+import { S3Client,PutObjectCommand } from "@aws-sdk/client-s3";
+import { RequestEnvelope } from "ask-sdk-model";
 
 export class S3RequestLogger implements RequestLogger {
     client: S3Client | undefined;

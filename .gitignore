@@ -1,5 +1,8 @@
 */node_modules
 deploy/package-template.yml
-src/test/model.json
+app/src/test/model.json
 app/dist
+app/libs
+app/**/*.zip
 node_modules
+.terraform

@@ -1,18 +1,17 @@
-import {client, TrashData} from "trash-common";
-import {DisplayCreator} from "./display-creator";
+import { CompareApiResult, GetTrashDataResult, RecentTrashDate, TextCreator, TrashData, TrashScheduleService } from "trash-common";
+import { DisplayCreator } from "./display-creator.mjs";
 
-import  { Skill, SkillBuilders, DefaultApiClient, HandlerInput, ResponseBuilder  } from 'ask-sdk-core';
-import {services,RequestEnvelope,IntentRequest, interfaces } from 'ask-sdk-model';
-import { Context } from 'aws-lambda';
-import { DynamoDBAdapter } from "./dynamodb-adapter";
-import { GetTrashDataResult, TrashScheduleService, RecentTrashDate, CompareResult } from "trash-common/dist/client";
+import  { Skill, SkillBuilders, DefaultApiClient, HandlerInput, ResponseBuilder  } from "ask-sdk-core";
+import { services,RequestEnvelope,IntentRequest, interfaces } from "ask-sdk-model";
+import { Context } from "aws-lambda";
+import { DynamoDBAdapter } from "./dynamodb-adapter.mjs";
 import { getLogger } from "trash-common";
-const {S3PersistenceAdapter} = require('ask-sdk-s3-persistence-adapter');
-let textCreator: client.TextCreator,tsService: TrashScheduleService, displayCreator: DisplayCreator
+import { S3PersistenceAdapter } from "ask-sdk-s3-persistence-adapter";
+let textCreator: TextCreator,tsService: TrashScheduleService, displayCreator: DisplayCreator
 const logger = getLogger();
 process.env.RUNLEVEL === "INFO" ? logger.setLevel_INFO() :  logger.setLevel_DEBUG();
-import { S3RequestLogger } from "./s3-request-logger-impl";
-import { RequestLogger } from "./request-logger";
+import { S3RequestLogger } from "./s3-request-logger-impl.mjs";
+import { RequestLogger } from "./request-logger.mjs";
 
 const PointDayValue = [
     {value:0},
@@ -33,13 +32,13 @@ interface ClientInfo {
     locale: string,
     timezone: string
 }
-const CINFO: ClientInfo = {locale: '', timezone: ''};
+const CINFO: ClientInfo = {locale: "", timezone: ""};
 
 const init = async (handlerInput: HandlerInput,option: any)=>{
     const { requestEnvelope, serviceClientFactory } = handlerInput;
     const locale: string = requestEnvelope.request.locale || "utc";
     CINFO.locale = locale;
-    textCreator = new client.TextCreator(locale);
+    textCreator = new TextCreator(locale);
     if(option.display) {
         displayCreator = new DisplayCreator(locale);
     }
@@ -53,11 +52,16 @@ const init = async (handlerInput: HandlerInput,option: any)=>{
         }
         // タイムゾーン取得後にclientインスタンスを生成
         return (deviceId && upsServiceClient ?
-            upsServiceClient.getSystemTimeZone(deviceId) : new Promise(resolve => { resolve('Asia/Tokyo') })
+            upsServiceClient.getSystemTimeZone(deviceId) : new Promise(resolve => { resolve("Asia/Tokyo") })
         ).then((timezone: any)=>{
             CINFO.timezone = timezone;
-            logger.debug('timezone:'+timezone);
-            tsService =  new client.TrashScheduleService(timezone, textCreator, new DynamoDBAdapter());
+            logger.debug("timezone:"+timezone);
+            tsService =  new TrashScheduleService(
+                timezone,
+                textCreator,
+                new DynamoDBAdapter(),
+                {url: process.env.MECAB_API_URL || "", api_key: process.env.MECAB_API_KEY || ""}
+            );
         });
     }
 };
@@ -67,7 +71,7 @@ const getEntitledProducts = async(handlerInput: HandlerInput):Promise<services.m
         const locale: string|undefined = handlerInput.requestEnvelope.request.locale;
         if(ms && locale) {
             const products =  await ms.getInSkillProducts(locale);
-            return products.inSkillProducts.filter(record=> record.entitled === 'ENTITLED');
+            return products.inSkillProducts.filter(record=> record.entitled === "ENTITLED");
         }
         return []
 };
@@ -89,7 +93,7 @@ const updateUserHistory = async(handlerInput: HandlerInput): Promise<number>=> {
 const setUpSellMessage = async(handlerInput: HandlerInput, responseBuilder: ResponseBuilder): Promise<boolean> => {
     const user_count = await updateUserHistory(handlerInput);
     logger.debug(`UserCount: ${user_count}`);
-    if (handlerInput.requestEnvelope.request.locale === 'ja-JP' && user_count % 5 === 0) {
+    if (handlerInput.requestEnvelope.request.locale === "ja-JP" && user_count % 5 === 0) {
         try {
             const entitledProducts = await getEntitledProducts(handlerInput);
             if (!entitledProducts || entitledProducts.length === 0) {
@@ -161,7 +165,7 @@ export const handler  = async function(event:RequestEnvelope ,context: Context) 
 
 const LaunchRequestHandler = {
     canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
+        return handlerInput.requestEnvelope.request.type === "LaunchRequest";
     },
     async handle(handlerInput: HandlerInput){
         logger.debug(JSON.stringify(handlerInput));
@@ -177,7 +181,7 @@ const LaunchRequestHandler = {
         }
         await init_ready
         const data: GetTrashDataResult | undefined = await tsService.getTrashData(accessToken)
-        if (data.status === 'error') {
+        if (data.status === "error") {
             return responseBuilder
                 .speak(textCreator.getMessage(data.msgId!))
                 .withShouldEndSession(true)
@@ -220,8 +224,8 @@ const LaunchRequestHandler = {
 
 const GetPointDayTrashesHandler = {
     canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'IntentRequest' &&
-                handlerInput.requestEnvelope.request.intent.name === 'GetPointDayTrashes';
+        return handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+                handlerInput.requestEnvelope.request.intent.name === "GetPointDayTrashes";
     },
     async handle(handlerInput: HandlerInput){
         const {responseBuilder, requestEnvelope} = handlerInput;
@@ -236,12 +240,12 @@ const GetPointDayTrashesHandler = {
         }
         const intentRequest: IntentRequest = requestEnvelope.request as IntentRequest
         const resolutions = intentRequest.intent.slots?.DaySlot.resolutions;
-        if(resolutions && resolutions.resolutionsPerAuthority && resolutions.resolutionsPerAuthority[0].status.code === 'ER_SUCCESS_MATCH') {
+        if(resolutions && resolutions.resolutionsPerAuthority && resolutions.resolutionsPerAuthority[0].status.code === "ER_SUCCESS_MATCH") {
             let slotValue = Number(resolutions.resolutionsPerAuthority![0].values[0].value.id);
 
             await init_ready
             const trash_result = await tsService.getTrashData(accessToken)
-            if (!trash_result || trash_result?.status === 'error') {
+            if (!trash_result || trash_result?.status === "error") {
                 return responseBuilder
                     .speak(textCreator.getMessage(trash_result.msgId!))
                     .withShouldEndSession(true)
@@ -288,8 +292,8 @@ const GetPointDayTrashesHandler = {
 
 const GetRegisteredContent = {
     canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'IntentRequest' &&
-                handlerInput.requestEnvelope.request.intent.name === 'GetRegisteredContent';
+        return handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+                handlerInput.requestEnvelope.request.intent.name === "GetRegisteredContent";
     },
     async handle(handlerInput: HandlerInput) {
         const {requestEnvelope, responseBuilder} = handlerInput;
@@ -306,7 +310,7 @@ const GetRegisteredContent = {
         try {
             await init_ready
             const trash_result = await tsService.getTrashData(accessToken)
-            if (!trash_result || trash_result?.status === 'error') {
+            if (!trash_result || trash_result?.status === "error") {
                 return responseBuilder
                     .speak(textCreator.getMessage(trash_result.msgId!))
                     .withShouldEndSession(true)
@@ -329,8 +333,8 @@ const GetRegisteredContent = {
 };
 const GetDayFromTrashTypeIntent = {
     canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'IntentRequest' &&
-                handlerInput.requestEnvelope.request.intent.name === 'GetDayFromTrashType';
+        return handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+                handlerInput.requestEnvelope.request.intent.name === "GetDayFromTrashType";
     },
     async handle(handlerInput: HandlerInput) {
         const {requestEnvelope, responseBuilder} = handlerInput;
@@ -346,17 +350,17 @@ const GetDayFromTrashTypeIntent = {
         const resolutions = (requestEnvelope.request as IntentRequest).intent.slots?.TrashTypeSlot.resolutions;
         await  init_ready;
         const trash_result = await tsService.getTrashData(accessToken);
-        if (!trash_result || trash_result?.status === 'error') {
+        if (!trash_result || trash_result?.status === "error") {
             return responseBuilder
                 .speak(textCreator.getMessage(trash_result.msgId!))
                 .withShouldEndSession(true)
                 .getResponse();
         }
-        if(resolutions && resolutions.resolutionsPerAuthority![0].status.code === 'ER_SUCCESS_MATCH') {
+        if(resolutions && resolutions.resolutionsPerAuthority![0].status.code === "ER_SUCCESS_MATCH") {
             const slotValue = resolutions.resolutionsPerAuthority![0].values[0].value;
             const trash_data = tsService.getDayByTrashType(trash_result.response!, slotValue.id);
             if(trash_data && trash_data.length > 0) {
-                logger.debug('Find Match Trash:'+JSON.stringify(trash_data));
+                logger.debug("Find Match Trash:"+JSON.stringify(trash_data));
                 responseBuilder
                     .speak(textCreator.getDayByTrashTypeMessage({type: slotValue.id,name: slotValue.name}, trash_data))
                 await setUpSellMessage(handlerInput, responseBuilder);
@@ -364,14 +368,14 @@ const GetDayFromTrashTypeIntent = {
             }
         }
         // ユーザーの発話がスロット以外 または 合致するデータが登録情報に無かった場合はAPIでのテキスト比較を実施する
-        logger.debug('Not match resolutions:'+JSON.stringify(requestEnvelope));
+        logger.debug("Not match resolutions:"+JSON.stringify(requestEnvelope));
 
         // ユーザーが発話したゴミ
         const speeched_trash: string = (requestEnvelope.request as IntentRequest).intent .slots?.TrashTypeSlot.value as string;
-        logger.debug('check freetext trash:' + speeched_trash);
+        logger.debug("check freetext trash:" + speeched_trash);
         // 登録タイプotherのみを比較対象とする
         const other_trashes = trash_result.response?.filter((value)=>{
-            return value.type === 'other'
+            return value.type === "other"
         });
 
         let trash_data: RecentTrashDate[] = [];
@@ -379,16 +383,10 @@ const GetDayFromTrashTypeIntent = {
         // otherタイプの登録があれば比較する
         let speech_prefix = "";
         if(other_trashes && other_trashes.length > 0) {
-            const compare_list: Array<Promise<CompareResult>> = []
-            other_trashes.forEach((trash: TrashData)=>{
-                compare_list.push(
-                    tsService.compareTwoText(speeched_trash,trash.trash_val!)
-                );
-            });
-
             try {
-                const compare_result: Array<CompareResult> = await Promise.all(compare_list);
-                logger.info('compare result:'+JSON.stringify(compare_result));
+                const compare_result: CompareApiResult[] =
+                    await tsService.compareMultipleTrashText(speeched_trash,other_trashes.map((trash: TrashData): string => trash.trash_val || ""));
+                logger.info("compare result:"+JSON.stringify(compare_result));
                 const max_data = {trash: "",score: 0, index: 0};
                 compare_result.forEach((result,index)=>{
                     if(result.score >= max_data.score) {
@@ -401,14 +399,14 @@ const GetDayFromTrashTypeIntent = {
                     if(max_data.score < 0.7 && max_data.score >= 0.5) {
                         speech_prefix = `${max_data.trash} ですか？`;
                     }
-                    trash_data = tsService.getDayByTrashType([other_trashes[max_data.index]],'other');
+                    trash_data = tsService.getDayByTrashType([other_trashes[max_data.index]],"other");
                 }
             } catch(error: any) {
                 logger.error(error);
                 return responseBuilder.speak(textCreator.getMessage("ERROR_UNKNOWN")).withShouldEndSession(true).getResponse();
             }
         }
-        responseBuilder.speak(speech_prefix + textCreator.getDayByTrashTypeMessage({type: 'other', name: speeched_trash}, trash_data));
+        responseBuilder.speak(speech_prefix + textCreator.getDayByTrashTypeMessage({type: "other", name: speeched_trash}, trash_data));
 
         await setUpSellMessage(handlerInput, responseBuilder);
         return responseBuilder.getResponse();
@@ -417,10 +415,10 @@ const GetDayFromTrashTypeIntent = {
 
 const CheckReminderHandler = {
     canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-            && handlerInput.requestEnvelope.request.intent.name === 'SetReminder'
+        return handlerInput.requestEnvelope.request.type === "IntentRequest"
+            && handlerInput.requestEnvelope.request.intent.name === "SetReminder"
             && (!handlerInput.requestEnvelope.request.intent.confirmationStatus
-            || handlerInput.requestEnvelope.request.intent.confirmationStatus === 'NONE');
+            || handlerInput.requestEnvelope.request.intent.confirmationStatus === "NONE");
     },
     async handle(handlerInput: HandlerInput) {
         logger.debug(`CheckReminderHandler -> ${JSON.stringify(handlerInput,null,2)}`)
@@ -431,7 +429,7 @@ const CheckReminderHandler = {
             // リマインダーのパーミッションが許可されていない場合は許可を促す
             return responseBuilder
                 .speak(textCreator.getMessage("REMINDER_PERMISSION"))
-                .withAskForPermissionsConsentCard(['alexa::alerts:reminders:skill:readwrite'])
+                .withAskForPermissionsConsentCard(["alexa::alerts:reminders:skill:readwrite"])
                 .getResponse();
         }
 
@@ -458,7 +456,7 @@ const CheckReminderHandler = {
                 }
                 const timerSlot = (requestEnvelope.request as IntentRequest).intent.slots?.TimerSlot;
                 const dialogState = (requestEnvelope.request as IntentRequest).dialogState;
-                if (dialogState != 'COMPLETED') {
+                if (dialogState != "COMPLETED") {
                     return responseBuilder
                         .addDelegateDirective()
                         .getResponse();
@@ -487,10 +485,10 @@ const CheckReminderHandler = {
 
 const SetReminderHandler = {
     canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-            && handlerInput.requestEnvelope.request.intent.name === 'SetReminder'
+        return handlerInput.requestEnvelope.request.type === "IntentRequest"
+            && handlerInput.requestEnvelope.request.intent.name === "SetReminder"
             && handlerInput.requestEnvelope.request.intent.confirmationStatus
-            && handlerInput.requestEnvelope.request.intent.confirmationStatus != 'NONE';
+            && handlerInput.requestEnvelope.request.intent.confirmationStatus != "NONE";
     },
     async handle(handlerInput: HandlerInput) {
         const {responseBuilder, requestEnvelope, serviceClientFactory} = handlerInput;
@@ -504,10 +502,10 @@ const SetReminderHandler = {
                 .getResponse();
         }
         const intent_request: IntentRequest = requestEnvelope.request as IntentRequest
-        if(intent_request.intent.confirmationStatus === 'CONFIRMED') {
+        if(intent_request.intent.confirmationStatus === "CONFIRMED") {
             await init_ready
             const trash_data_result = await tsService.getTrashData(accessToken);
-            if (trash_data_result && trash_data_result.status === 'error') {
+            if (trash_data_result && trash_data_result.status === "error") {
                 return responseBuilder
                     .speak(textCreator.getMessage(trash_data_result.msgId!))
                     .withShouldEndSession(true)
@@ -539,7 +537,7 @@ const SetReminderHandler = {
                 if (err.statusCode === 401 || err.statuScode === 403) {
                     return responseBuilder
                         .speak(textCreator.getMessage("REMINDER_PERMISSION"))
-                        .withAskForPermissionsConsentCard(['alexa::alerts:reminders:skill:readwrite'])
+                        .withAskForPermissionsConsentCard(["alexa::alerts:reminders:skill:readwrite"])
                         .getResponse();
                 }
                 return responseBuilder
@@ -547,7 +545,7 @@ const SetReminderHandler = {
                     .withShouldEndSession(true)
                     .getResponse();
             });
-        } else if(intent_request.intent.confirmationStatus === 'DENIED') {
+        } else if(intent_request.intent.confirmationStatus === "DENIED") {
             return responseBuilder
                 .speak(textCreator.getMessage("REMINDER_CANCEL"))
                 .withShouldEndSession(true)
@@ -559,8 +557,8 @@ const SetReminderHandler = {
 
 const PurchaseHandler = {
     canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type ==='IntentRequest' &&
-             handlerInput.requestEnvelope.request.intent.name === 'Purchase';
+        return handlerInput.requestEnvelope.request.type ==="IntentRequest" &&
+             handlerInput.requestEnvelope.request.intent.name === "Purchase";
     },
     async handle(handlerInput: HandlerInput) {
         const {responseBuilder, requestEnvelope, serviceClientFactory} = handlerInput;
@@ -569,7 +567,7 @@ const PurchaseHandler = {
         const locale = requestEnvelope.request.locale || "ja";
         const inSkillProductResponse = await ms?.getInSkillProducts(locale)
         try {
-            const entitledProducts = inSkillProductResponse?.inSkillProducts.filter(record => record.entitled === 'ENTITLED');
+            const entitledProducts = inSkillProductResponse?.inSkillProducts.filter(record => record.entitled === "ENTITLED");
             if (entitledProducts && entitledProducts.length > 0) {
                 return responseBuilder.speak(textCreator.getMessage("PURCHASE_ALREADY_PURCHASED")).reprompt(textCreator.getMessage("NOTICE_CONTINUE")).getResponse();
             } else {
@@ -594,15 +592,15 @@ const PurchaseHandler = {
 
 const CancelPurchaseHandler = {
     canHandle(handlerInput: HandlerInput){
-        return handlerInput.requestEnvelope.request.type ==='IntentRequest'
-                && handlerInput.requestEnvelope.request.intent.name === 'CancelPurchase'
+        return handlerInput.requestEnvelope.request.type ==="IntentRequest"
+                && handlerInput.requestEnvelope.request.intent.name === "CancelPurchase"
     },
     handle(handlerInput: HandlerInput) {
         init(handlerInput, {});
         return handlerInput.responseBuilder
             .addDirective({
-                type: 'Connections.SendRequest',
-                name: 'Cancel',
+                type: "Connections.SendRequest",
+                name: "Cancel",
                 payload: {
                     InSkillProduct: {
                         productId: process.env.REMINDER_PRODUCT_ID
@@ -616,7 +614,7 @@ const CancelPurchaseHandler = {
 
 const PurchaseResultHandler = {
     canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type ==='Connections.Response';
+        return handlerInput.requestEnvelope.request.type ==="Connections.Response";
     },
     handle(handlerInput: HandlerInput) {
         init(handlerInput, {});
@@ -624,8 +622,8 @@ const PurchaseResultHandler = {
         const purchaseRequest:interfaces.connections.ConnectionsRequest = requestEnvelope.request as interfaces.connections.ConnectionsRequest;
         const purchasePayload = purchaseRequest.payload;
         logger.debug("PurchaseResult:" + JSON.stringify(purchasePayload));
-        if(purchasePayload?.purchaseResult === 'ACCEPTED') {
-            if(purchaseRequest.name === 'Buy' ||  purchaseRequest.name === 'Upsell') {
+        if(purchasePayload?.purchaseResult === "ACCEPTED") {
+            if(purchaseRequest.name === "Buy" ||  purchaseRequest.name === "Upsell") {
                 return responseBuilder
                     .speak(textCreator.getMessage("PURCHASE_THANKS"))
                     .reprompt(textCreator.getMessage("NOTICE_CONTINUE"))
@@ -636,17 +634,17 @@ const PurchaseResultHandler = {
                     .withShouldEndSession(true)
                     .getResponse();
             }
-        } else if(purchasePayload?.purchaseResult === 'DECLINED') {
+        } else if(purchasePayload?.purchaseResult === "DECLINED") {
             return responseBuilder
                 .speak(textCreator.getMessage("PURCHASE_CANCEL"))
                 .withShouldEndSession(true)
                 .getResponse();
-        } else if(purchasePayload?.purchaseResult === 'ERROR') {
+        } else if(purchasePayload?.purchaseResult === "ERROR") {
             return responseBuilder
                 .speak(textCreator.getMessage("PURCHASE_CANCEL"))
                 .withShouldEndSession(true)
                 .getResponse();
-        } else if(purchasePayload?.purchasePayload === 'ALREADY_PURCHASED') {
+        } else if(purchasePayload?.purchasePayload === "ALREADY_PURCHASED") {
             return responseBuilder
                 .speak(textCreator.getMessage("PURCHASE_ALREADY_PURCHASED"))
                 .reprompt(textCreator.getMessage("NOTICE_CONTINUE"))
@@ -658,8 +656,8 @@ const PurchaseResultHandler = {
 
 const HelpIntentHandler = {
     canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'IntentRequest' &&
-             handlerInput.requestEnvelope.request.intent.name === 'AMAZON.HelpIntent';
+        return handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+             handlerInput.requestEnvelope.request.intent.name === "AMAZON.HelpIntent";
     },
     async handle(handlerInput: HandlerInput) {
         init(handlerInput, {});
@@ -674,9 +672,9 @@ const HelpIntentHandler = {
 
 const CancelAndStopIntentHandler = {
     canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'IntentRequest' &&
-                (handlerInput.requestEnvelope.request.intent.name === 'AMAZON.CancelIntent' ||
-                handlerInput.requestEnvelope.request.intent.name === 'AMAZON.StopIntent');
+        return handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+                (handlerInput.requestEnvelope.request.intent.name === "AMAZON.CancelIntent" ||
+                handlerInput.requestEnvelope.request.intent.name === "AMAZON.StopIntent");
     },
     async handle(handlerInput: HandlerInput) {
         init(handlerInput, {});
@@ -688,7 +686,7 @@ const CancelAndStopIntentHandler = {
 
 const SessionEndedRequestHandler = {
     canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest';
+        return handlerInput.requestEnvelope.request.type === "SessionEndedRequest";
     },
     async handle(handlerInput: HandlerInput) {
         return handlerInput.responseBuilder
@@ -699,9 +697,9 @@ const SessionEndedRequestHandler = {
 
 const NextPreviousIntentHandler = {
     canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-        && (handlerInput.requestEnvelope.request.intent.name === 'AMAZON.NextIntent'
-        || handlerInput.requestEnvelope.request.intent.name === 'AMAZON.PreviousIntent');
+        return handlerInput.requestEnvelope.request.type === "IntentRequest"
+        && (handlerInput.requestEnvelope.request.intent.name === "AMAZON.NextIntent"
+        || handlerInput.requestEnvelope.request.intent.name === "AMAZON.PreviousIntent");
     },
     async handle(handlerInput: HandlerInput) {
         init(handlerInput, {});

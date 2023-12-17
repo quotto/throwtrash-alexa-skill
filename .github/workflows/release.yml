@@ -1,0 +1,36 @@
+name: throwtrash-alexa-skill release
+on:
+  push:
+    branches:
+      - main
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  release:
+    environment: prod
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        id: configure-aws-credentials
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: GitHubActions
+          aws-region: ${{ vars.AWS_REGION }}
+          output-credentials: true
+      - name: Versioning
+        id: versioning
+        run: |
+          # AWS認証情報を設定
+          export AWS_ACCESS_KEY_ID=${{ steps.configure-aws-credentials.outputs.aws-access-key-id }}
+          export AWS_SECRET_ACCESS_KEY=${{ steps.configure-aws-credentials.outputs.aws-secret-access-key }}
+          export AWS_SESSION_TOKEN=${{ steps.configure-aws-credentials.outputs.aws-session-token }}
+          export AWS_REGION=${{ vars.AWS_REGION }}
+
+          PUBLISH_VERSION=$(aws lambda publish-version --function-name ThrowTrashSkill | jq -r '.Version')
+          echo "export PUBLISH_VERSION=${PUBLISH_VERSION}" >>  $GITHUB_OUTPUT
+          aws lambda add-permission --function-name ThrowTrashSkill:${PUBLISH_VERSION} --statement-id alexa --action lambda:InvokeFunction --principal alexa-appkit.amazon.com --event-source-token ${APPID}
+      - name: Switch lambda latest version
+        run: |
+          aws lambda update-alias --function-name ThrowTrashSkill --function-version ${{ steps.versioning.outputs.PUBLISH_VERSION }} --name RELEASE
