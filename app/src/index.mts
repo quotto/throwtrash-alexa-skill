@@ -10,8 +10,6 @@ import { S3PersistenceAdapter } from "ask-sdk-s3-persistence-adapter";
 let textCreator: TextCreator,tsService: TrashScheduleService, displayCreator: DisplayCreator
 const logger = getLogger();
 process.env.RUNLEVEL === "INFO" ? logger.setLevel_INFO() :  logger.setLevel_DEBUG();
-import { S3RequestLogger } from "./s3-request-logger-impl.mjs";
-import { RequestLogger } from "./request-logger.mjs";
 
 const PointDayValue = [
     {value:0},
@@ -133,8 +131,6 @@ const isSupportedAPL = function(requestEnvelope: RequestEnvelope): Boolean {
 
 let skill: Skill;
 export const handler  = async function(event:RequestEnvelope ,context: Context) {
-    const requestLogger: RequestLogger = new S3RequestLogger(process.env.APP_REGION || "ap-northeast-1");
-    requestLogger.logRequest(event,context.awsRequestId);
     if(!skill) {
         skill = SkillBuilders.custom()
             .addRequestHandlers(
@@ -159,7 +155,6 @@ export const handler  = async function(event:RequestEnvelope ,context: Context) 
     }
     return skill.invoke(event,context).catch(error=>{
         console.error(error);
-        requestLogger.logErrorRequest(event,context.awsRequestId);
     });
 };
 
