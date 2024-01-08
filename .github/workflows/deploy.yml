@@ -60,6 +60,7 @@ jobs:
           npm install
       - name: test
         working-directory: app
+        if: github.event_name == 'push'
         run: |
           sudo npm install -g ask-cli@2.1.1 --unsafe-perm
           mkdir -p ~/.ask
