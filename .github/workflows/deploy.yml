@@ -10,6 +10,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  issues: write
 jobs:
   set-stage:
     runs-on: ubuntu-latest
