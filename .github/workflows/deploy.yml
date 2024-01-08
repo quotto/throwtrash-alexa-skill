@@ -89,6 +89,7 @@ jobs:
           echo "ApiUrl=\"${{ secrets.MECAB_API_URL }}\"" >> terraform.tfvars
           echo "ApiKey=\"${{ secrets.MECAB_API_KEY }}\"" >> terraform.tfvars
           echo "ReminderProductID=\"${{ secrets.REMINDER_PRODUCT_ID }}\"" >> terraform.tfvars
+          echo "RunLevel=\"${{ vars.RUN_LEVEL }}\"" >> terraform.tfvars
           echo "region=\"${{ vars.AWS_REGION }}\"" >> terraform.tfvars
       - name: plan
         id: terraform-plan
