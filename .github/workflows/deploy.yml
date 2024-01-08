@@ -1,11 +1,17 @@
-name: throwtrash-alexa-skill deploy
+name: deploy
 on:
   push:
     branches-ignore:
       - main
+  pull_request:
+    branches:
+      - deploy
+    types: [opened, synchronize]
 permissions:
   id-token: write
   contents: read
+  issues: write
+  pull-requests: write
 jobs:
   set-stage:
     runs-on: ubuntu-latest
@@ -15,12 +21,12 @@ jobs:
       - name: Set stage
         id: set-stage
         run: |
-          if [ ${{ github.ref }} = 'refs/heads/deploy' ]; then
+          if [ ${{ github.event_name }} == "pull_request" -o ${{ github.ref }} == "ref/heads/deploy" ]; then
             echo "STAGE=prod" >> $GITHUB_OUTPUT
           else
             echo "STAGE=dev" >> $GITHUB_OUTPUT
           fi
-  deploy:
+  build-and-deploy:
     environment: ${{ needs.set-stage.outputs.STAGE }}
     needs:
       - set-stage
@@ -35,7 +41,6 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           role-session-name: GitHubActions
           aws-region: ${{ vars.AWS_REGION }}
-          output-credentials: true
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
@@ -57,6 +62,7 @@ jobs:
           npm install
       - name: test
         working-directory: app
+        if: github.event_name == 'push'
         run: |
           sudo npm install -g ask-cli@2.1.1 --unsafe-perm
           mkdir -p ~/.ask
@@ -74,23 +80,39 @@ jobs:
           cp package.json package-lock.json libs/nodejs
           # プロダクション用のパッケージだけインストールする
           npm install --prefix libs/nodejs --production
-      - name: deploy
+      - name: init
         run: |
-          # AWS認証情報を設定
-          export AWS_ACCESS_KEY_ID=${{ steps.configure-aws-credentials.outputs.aws-access-key-id }}
-          export AWS_SECRET_ACCESS_KEY=${{ steps.configure-aws-credentials.outputs.aws-secret-access-key }}
-          export AWS_SESSION_TOKEN=${{ steps.configure-aws-credentials.outputs.aws-session-token }}
-
           # Terraformの初期化
           terraform init -backend-config="region=${{ vars.AWS_REGION }}" -backend-config="bucket=throwtrash-tfstate-${{ vars.AWS_REGION }}"
-
           # TFVARファイルを作成
           echo "AppID=\"${{ secrets.APP_ID }}\"" >> terraform.tfvars
           echo "ApiUrl=\"${{ secrets.MECAB_API_URL }}\"" >> terraform.tfvars
           echo "ApiKey=\"${{ secrets.MECAB_API_KEY }}\"" >> terraform.tfvars
           echo "ReminderProductID=\"${{ secrets.REMINDER_PRODUCT_ID }}\"" >> terraform.tfvars
           echo "region=\"${{ vars.AWS_REGION }}\"" >> terraform.tfvars
-
+      - name: plan
+        id: terraform-plan
+        run: |
           # Terraformの実行
-          terraform plan -var-file=terraform.tfvars
+          {
+            echo "plan<<EOF"
+            terraform plan -var-file=terraform.tfvars -no-color
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+          
+      - name: Add PR Comment
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `\`\`\`${{ steps.terraform-plan.outputs.plan  }} \`\`\``
+            });
+      - name: deploy
+        if: github.event_name == 'push'
+        run: |
           terraform apply -auto-approve -var-file=terraform.tfvars
