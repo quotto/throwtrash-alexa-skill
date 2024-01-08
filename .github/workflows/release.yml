@@ -29,7 +29,7 @@ jobs:
           export AWS_REGION=${{ vars.AWS_REGION }}
 
           PUBLISH_VERSION=$(aws lambda publish-version --function-name ThrowTrashSkill | jq -r '.Version')
-          echo "export PUBLISH_VERSION=${PUBLISH_VERSION}" >>  $GITHUB_OUTPUT
+          echo "PUBLISH_VERSION=${PUBLISH_VERSION}" >>  $GITHUB_OUTPUT
           aws lambda add-permission --function-name ThrowTrashSkill:${PUBLISH_VERSION} --statement-id alexa --action lambda:InvokeFunction --principal alexa-appkit.amazon.com --event-source-token ${{ secrets.APP_ID }}
       - name: Switch lambda latest version
         run: |
