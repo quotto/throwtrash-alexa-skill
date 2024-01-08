@@ -21,7 +21,7 @@ jobs:
       - name: Set stage
         id: set-stage
         run: |
-          if [ ${{ github.event_name }} == "pull_request" -o ${{ github.ref }} == "ref/heads/deploy" ]; then
+          if [ ${{ github.event_name }} == "pull_request" -o ${{ github.ref }} == "refs/heads/deploy" ]; then
             echo "STAGE=prod" >> $GITHUB_OUTPUT
           else
             echo "STAGE=dev" >> $GITHUB_OUTPUT
@@ -99,7 +99,6 @@ jobs:
             terraform plan -var-file=terraform.tfvars -no-color
             echo EOF
           } >> "$GITHUB_OUTPUT"
-          
       - name: Add PR Comment
         uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
