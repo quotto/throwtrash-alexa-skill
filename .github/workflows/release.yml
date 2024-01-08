@@ -1,4 +1,4 @@
-name: throwtrash-alexa-skill release
+name: release
 on:
   push:
     branches:

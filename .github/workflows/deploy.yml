@@ -1,8 +1,11 @@
-name: throwtrash-alexa-skill deploy
+name: deploy
 on:
   push:
     branches-ignore:
       - main
+  pull_request:
+    branches:
+      - deploy
 permissions:
   id-token: write
   contents: read
@@ -15,12 +18,12 @@ jobs:
       - name: Set stage
         id: set-stage
         run: |
-          if [ ${{ github.ref }} = 'refs/heads/deploy' ]; then
+          if [ ${{ github.event_name }} == "pull_request" -o ${{ github.ref }} == "ref/heads/deploy"]; then
             echo "STAGE=prod" >> $GITHUB_OUTPUT
           else
             echo "STAGE=dev" >> $GITHUB_OUTPUT
           fi
-  deploy:
+  build:
     environment: ${{ needs.set-stage.outputs.STAGE }}
     needs:
       - set-stage
@@ -74,7 +77,7 @@ jobs:
           cp package.json package-lock.json libs/nodejs
           # プロダクション用のパッケージだけインストールする
           npm install --prefix libs/nodejs --production
-      - name: deploy
+      - name: plan
         run: |
           # AWS認証情報を設定
           export AWS_ACCESS_KEY_ID=${{ steps.configure-aws-credentials.outputs.aws-access-key-id }}
@@ -93,4 +96,61 @@ jobs:
 
           # Terraformの実行
           terraform plan -var-file=terraform.tfvars
-          terraform apply -auto-approve -var-file=terraform.tfvars
+      - name: Add PR Comment
+        uses: actions/github-script@v3
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: ```${{ steps.terraform-plan.outputs.stdout }} ```
+            });
+      - name: upload module
+        uses: actions/upload-artifact@v2
+        with:
+          name: modules
+          path: |
+            app/libs
+            app/dist
+      - name: upload tfvars
+        uses: actions/upload-artifact@v2
+        with:
+          name: tfvars
+          path: terraform.tfvars
+  deploy:
+      needs:
+        - set-stage
+        - build
+      environment: ${{ needs.set-stage.outputs.STAGE }}
+      runs-on: ubuntu-latest
+      if: github.event_name == 'push'
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+        - name: download module
+          uses: actions/download-artifact@v2
+          with:
+            name: modules
+            path: app
+        - name: download tfvars
+          uses: actions/download-artifact@v2
+          with:
+            name: tfvars
+            path: .
+        - name: Configure aws credentials
+          uses: aws-actions/configure-aws-credentials@v3
+          id: configure-aws-credentials
+          with:
+            role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+            role-session-name: GitHubActions
+            aws-region: ${{ vars.AWS_REGION }}
+            output-credentials: true
+        - name: deploy
+          run: |
+            export AWS_ACCESS_KEY_ID=${{ steps.configure-aws-credentials.outputs.aws-access-key-id }}
+            export AWS_SECRET_ACCESS_KEY=${{ steps.configure-aws-credentials.outputs.aws-secret-access-key }}
+            export AWS_SESSION_TOKEN=${{ steps.configure-aws-credentials.outputs.aws-session-token }}
+            terraform apply -auto-approve -var-file=terraform.tfvars
