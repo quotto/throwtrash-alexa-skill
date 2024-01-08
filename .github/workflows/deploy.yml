@@ -1,0 +1,118 @@
+name: deploy
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - deploy
+    types: [opened, synchronize]
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+  pull-requests: write
+jobs:
+  set-stage:
+    runs-on: ubuntu-latest
+    outputs:
+      STAGE: ${{ steps.set-stage.outputs.STAGE }}
+    steps:
+      - name: Set stage
+        id: set-stage
+        run: |
+          if [ ${{ github.event_name }} == "pull_request" -o ${{ github.ref }} == "refs/heads/deploy" ]; then
+            echo "STAGE=prod" >> $GITHUB_OUTPUT
+          else
+            echo "STAGE=dev" >> $GITHUB_OUTPUT
+          fi
+  build-and-deploy:
+    environment: ${{ needs.set-stage.outputs.STAGE }}
+    needs:
+      - set-stage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        id: configure-aws-credentials
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: GitHubActions
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+      - name: Cache node modules
+        env:
+          cache-name: cache-node-modules
+        uses: actions/cache@v3
+        with:
+          path: app/node_modules
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('app/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: npm install
+        working-directory: app
+        run: |
+          npm install
+      - name: test
+        working-directory: app
+        if: github.event_name == 'push'
+        run: |
+          sudo npm install -g ask-cli@2.1.1 --unsafe-perm
+          mkdir -p ~/.ask
+          echo "${{ secrets.ASK_CLI_CONFIG }}" > ~/.ask/cli_config
+          export APP_ID=$APPID
+          npm test
+      - name: build
+        working-directory: app
+        run: |
+          npm run build
+      - name: layer-install
+        working-directory: app
+        run: |
+          mkdir -p libs/nodejs
+          cp package.json package-lock.json libs/nodejs
+          # プロダクション用のパッケージだけインストールする
+          npm install --prefix libs/nodejs --production
+      - name: init
+        run: |
+          # Terraformの初期化
+          terraform init -backend-config="region=${{ vars.AWS_REGION }}" -backend-config="bucket=throwtrash-tfstate-${{ vars.AWS_REGION }}"
+          # TFVARファイルを作成
+          echo "AppID=\"${{ secrets.APP_ID }}\"" >> terraform.tfvars
+          echo "ApiUrl=\"${{ secrets.MECAB_API_URL }}\"" >> terraform.tfvars
+          echo "ApiKey=\"${{ secrets.MECAB_API_KEY }}\"" >> terraform.tfvars
+          echo "ReminderProductID=\"${{ secrets.REMINDER_PRODUCT_ID }}\"" >> terraform.tfvars
+          echo "RunLevel=\"${{ vars.RUN_LEVEL }}\"" >> terraform.tfvars
+          echo "region=\"${{ vars.AWS_REGION }}\"" >> terraform.tfvars
+      - name: plan
+        id: terraform-plan
+        run: |
+          # Terraformの実行
+          {
+            echo "plan<<EOF"
+            terraform plan -var-file=terraform.tfvars -no-color
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+      - name: Add PR Comment
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `\`\`\`${{ steps.terraform-plan.outputs.plan  }} \`\`\``
+            });
+      - name: deploy
+        if: github.event_name == 'push'
+        run: |
+          terraform apply -auto-approve -var-file=terraform.tfvars
