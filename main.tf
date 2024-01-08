@@ -112,6 +112,9 @@ resource "aws_iam_role" "LambdaExecRole" {
     app   = "throwtrash"
     group = "skill"
   }
+  managed_policy_arns = [
+    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  ]
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -126,6 +129,11 @@ resource "aws_iam_role" "LambdaExecRole" {
   ]
 }
 EOF
+}
+
+resource "aws_iam_role_policy_attachment" "LambdaRolePolicyAttachment" {
+  role       = aws_iam_role.LambdaExecRole.name
+  policy_arn = aws_iam_policy.LambdaExecPolicy.arn
 }
 
 resource "aws_s3_bucket" "PreferenceBucket" {
