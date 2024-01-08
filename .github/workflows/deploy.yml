@@ -102,7 +102,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: ```${{ steps.terraform-plan.outputs.stdout }} ```
+              body: `\`\`\`${{ steps.terraform-plan.outputs.stdout }} \`\`\``
             });
       - name: deploy
         if: github.event_name == 'push'
