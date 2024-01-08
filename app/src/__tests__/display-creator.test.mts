@@ -1,9 +1,10 @@
-import {DisplayCreator} from "../display-creator"
+import { DisplayCreator } from "../display-creator.mjs"
 const displayCreator = new DisplayCreator("ja-JP")
-import * as _ from "lodash"
+import { cloneDeep } from "lodash-es"
 
-const templateDocument = require("../resource/display/apl_template_export.json")
-const templateDataSources = require("../resource/display/datasources.json")
+// ESモジュールでJSONファイルを読み込むためにrequireが必要になる
+import templateDocument from "../resource/display/apl_template_export.json" assert { type: "json" };
+import templateDataSources from "../resource/display/datasources.json" assert { type: "json" };
 
 describe("getThrowTrashesDirective",()=>{
     it("single schedule",()=>{
@@ -17,8 +18,8 @@ describe("getThrowTrashesDirective",()=>{
             date: new Date(2020,9,5) //2020/10/05
         }]
         const resultDirective = displayCreator.getThrowTrashesDirective(0,displayDataItem)
-        const expectDocument = _.cloneDeep(templateDocument)
-        const expectDataSources = _.cloneDeep(templateDataSources)
+        const expectDocument: any = cloneDeep(templateDocument)
+        const expectDataSources: any = cloneDeep(templateDataSources)
         expectDataSources.dataSources.listTemplate2Metadata.title = "3日間のごみ出し予定"
         expectDataSources.dataSources.listTemplate2ListData.listPage.listItems = [
             {
@@ -87,8 +88,8 @@ describe("getThrowTrashesDirective",()=>{
             }
         ]
         const resultDirective = displayCreator.getThrowTrashesDirective(0,displayDataItem)
-        const expectDocument = _.cloneDeep(templateDocument)
-        const expectDataSources = _.cloneDeep(templateDataSources)
+        const expectDocument: any = cloneDeep(templateDocument)
+        const expectDataSources: any = cloneDeep(templateDataSources)
         expectDataSources.dataSources.listTemplate2Metadata.title = "3日間のごみ出し予定"
         expectDataSources.dataSources.listTemplate2ListData.listPage.listItems = [
             {
@@ -201,11 +202,11 @@ describe("getShowScheduleDirective",()=>{
                type: "burn",
                typeText: "燃えるごみ",
                schedules: ["10月5日"]
-           } 
+           }
         ]
         const resultDirective = displayCreator.getShowScheduleDirective(trashData)
-        const expectDocument = _.cloneDeep(templateDocument)
-        const expectDataSources = _.cloneDeep(templateDataSources)
+        const expectDocument: any = cloneDeep(templateDocument)
+        const expectDataSources: any = cloneDeep(templateDataSources)
         expectDataSources.dataSources.listTemplate2Metadata.title = "登録されているゴミ出し予定"
         expectDataSources.dataSources.listTemplate2ListData.totalNumberOfItems = 1
         expectDataSources.dataSources.listTemplate2ListData.listPage.listItems = [
