@@ -49,10 +49,6 @@ class LaunchHandler extends Handler {
                     responseBuilder.addDirective(schedule_directive).withShouldEndSession(true);
                 }
             
-            
-                const request: any = handlerInput.requestEnvelope.request
-                const metadata: any = request.metadata;
-            
                 // 午後であれば明日のゴミ出し予定を答える
                 const offset = data.checkedNextday && tsService.calculateLocalTime(0).getHours() >= 12 ? 1 : 0;
                 const base_message: string = textCreator.getPointdayResponse(String(offset), threedaysTrashSchedule[offset]);
