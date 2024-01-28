@@ -1,6 +1,7 @@
 import { CompareApiResult, GetTrashDataResult, RecentTrashDate, TextCreator, TrashData, TrashScheduleService } from "trash-common";
 import { DisplayCreator } from "./display-creator.mjs";
 
+import LaunchHandler from "./handler/launch.mjs";
 import  { Skill, SkillBuilders, DefaultApiClient, HandlerInput, ResponseBuilder  } from "ask-sdk-core";
 import { services,RequestEnvelope,IntentRequest, interfaces } from "ask-sdk-model";
 import { Context } from "aws-lambda";
@@ -134,7 +135,7 @@ export const handler  = async function(event:RequestEnvelope ,context: Context) 
     if(!skill) {
         skill = SkillBuilders.custom()
             .addRequestHandlers(
-                LaunchRequestHandler,
+                LaunchHandler.handle({logger, textCreator, tsService, displayCreator}),
                 GetPointDayTrashesHandler,
                 GetRegisteredContent,
                 GetDayFromTrashTypeIntent,
