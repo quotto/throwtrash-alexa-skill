@@ -20,6 +20,7 @@ describe('LaunchHandler', () => {
   const logger = getLogger();
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedHandlerInput.requestEnvelope.request.type = 'LaunchRequest';
   });
 
   test.each([
@@ -174,5 +175,15 @@ describe('LaunchHandler', () => {
     expect(mockedHandlerInput.responseBuilder.speak).toHaveBeenCalledWith('エラーメッセージ');
     console.log("セッションを終了すること");
     expect(mockedHandlerInput.responseBuilder.withShouldEndSession).toHaveBeenCalledWith(true);
+  });
+  test('リクエストタイプがLaunchRequest以外の場合はハンドルしない', async () => {
+    mockedHandlerInput.requestEnvelope.request.type = 'IntentRequest';
+    const handler: RequestHandler = 
+      LaunchHandler.handle(
+        { logger: logger,  textCreator: mockedTextCreator, tsService: mockedTrashScheduleService, displayCreator: mockedDisplayCreator}
+      );
+
+    console.log("LaunchRequest以外の場合はハンドルしないこと")
+    expect(handler.canHandle(mockedHandlerInput)).toBe(false);
   });
 });
