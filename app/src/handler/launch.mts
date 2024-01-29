@@ -53,7 +53,6 @@ class LaunchHandler extends Handler {
                 const offset = data.checkedNextday && tsService.calculateLocalTime(0).getHours() >= 12 ? 1 : 0;
                 const base_message: string = textCreator.getPointdayResponse(String(offset), threedaysTrashSchedule[offset]);
             
-                logger.debug("From Regular Action");
                 responseBuilder.speak(base_message);
                 responseBuilder.withShouldEndSession(true);
                 return responseBuilder.getResponse();

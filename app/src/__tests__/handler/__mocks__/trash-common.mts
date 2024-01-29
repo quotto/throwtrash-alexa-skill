@@ -1,13 +1,11 @@
 import { jest } from '@jest/globals';
 import { HandlerInput, ResponseBuilder } from 'ask-sdk';
 import { ui,Response,Directive, Intent, canfulfill, interfaces } from "ask-sdk-model";
-import { create, get } from 'lodash';
-import { register } from 'node:module';
-import { mock } from 'node:test';
-import { DBAdapter, LocaleText, TextCreator, TrashData, TrashDataText, TrashTypeValue } from 'trash-common';
+import { DBAdapter, LocaleText, TextCreator, TrashData, TrashDataText, TrashScheduleService, TrashTypeValue } from 'trash-common';
+import { DisplayCreator } from '../../../display-creator.mjs';
 
 export const MockedTextCreator = {
-    newInstance: (): any => ({
+    newInstance: (): TextCreator => ({
         getMessage: jest.fn<(message_id: keyof LocaleText) => string>(),
         getPointdayResponse: jest.fn((offset, data) => "今日出せるゴミは燃えるゴミです。"),
         createTrashMessageBody: jest.fn<(trash_items: TrashTypeValue[])=>string>(),
@@ -18,11 +16,11 @@ export const MockedTextCreator = {
         getTrashName: jest.fn<(trash_type: string)=>string>(),
         getAllSchedule: jest.fn<(trashes: TrashData[])=>TrashDataText[]>(),
         getRegisterdContentForCard: jest.fn<(schedule_data: TrashDataText[])=>string>(),
-    })
+    } as unknown as TextCreator)
 }
 
 export const MockedTrashScheduleService =  {
-    newInstance: () => ({
+    newInstance: (): TrashScheduleService => ({
         getTrashData: jest.fn(),
         checkEnableTrashes: jest.fn(), 
         dbAdapter: jest.mock<DBAdapter>,
@@ -31,7 +29,14 @@ export const MockedTrashScheduleService =  {
         textCreator: jest.fn(),
         getTargetDayByWeekday: jest.fn(),
         getEnableTrashData: jest.fn(),
-    })
+    } as unknown as TrashScheduleService)
+}
+
+export const MockedDisplayCreator = {
+    newInstance: (): DisplayCreator => ({
+        getThrowTrashesDirective: jest.fn<(target_day: number, schedules: {data: TrashTypeValue[], date: Date}[])=>Directive>(),
+        getShowScheduleDirective: jest.fn<(regis_data: TrashDataText[])=>Directive>()
+    } as unknown as DisplayCreator)
 }
 
 class MockedResponseBuilderClass implements ResponseBuilder {
