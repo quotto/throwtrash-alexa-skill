@@ -1,7 +1,6 @@
 import { HandlerInput, RequestHandler } from "ask-sdk";
 import { Handler, HandlerParams } from "./types.mjs";
-import { GetTrashDataResult, Logger, TextCreator, TrashScheduleService } from "trash-common";
-import { DisplayCreator } from "../display-creator.mjs";
+import { GetTrashDataResult } from "trash-common";
 import { isSupportedAPL } from "../common/common.mjs";
 
 class LaunchHandler extends Handler {

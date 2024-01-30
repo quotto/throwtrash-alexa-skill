@@ -4,7 +4,6 @@ import {  TextCreator,  TrashData,  TrashScheduleService, getLogger } from "tras
 import { DisplayCreator } from "../../display-creator.mjs";
 import LaunchHandler from '../../handler/launch.mjs'; // Assuming this is the correct import path
 import { MockedDisplayCreator, MockedHandlerInput,  MockedTextCreator, MockedTrashScheduleService } from "./__mocks__/trash-common.mjs";
-import { mock } from "node:test";
 
 const mockedHandlerInput: HandlerInput = MockedHandlerInput.newInstance();
 const mockedTrashScheduleService: TrashScheduleService = MockedTrashScheduleService.newInstance();
@@ -169,7 +168,7 @@ describe('LaunchHandler', () => {
     console.log("LaunchRequestをハンドルすること")
     expect(handler.canHandle(mockedHandlerInput)).toBe(true);
     
-    const response = await handler.handle(mockedHandlerInput);
+    await handler.handle(mockedHandlerInput);
 
     console.log("ゴミ出し予定の取得に失敗した場合はエラーメッセージを返すこと");
     expect(mockedHandlerInput.responseBuilder.speak).toHaveBeenCalledWith('エラーメッセージ');
