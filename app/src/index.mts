@@ -2,6 +2,8 @@ import { CompareApiResult, GetTrashDataResult, RecentTrashDate, TextCreator, Tra
 import { DisplayCreator } from "./display-creator.mjs";
 
 import LaunchHandler from "./handler/launch.mjs";
+import { GetPointDayTrashesHandler } from "./handler/get-pointday-trashes.mjs";
+import { GetRegisteredContentHandler } from "./handler/get-registered-content.mjs";
 import  { Skill, SkillBuilders, DefaultApiClient, HandlerInput, ResponseBuilder  } from "ask-sdk-core";
 import { services,RequestEnvelope,IntentRequest, interfaces } from "ask-sdk-model";
 import { Context } from "aws-lambda";
@@ -136,8 +138,8 @@ export const handler  = async function(event:RequestEnvelope ,context: Context) 
         skill = SkillBuilders.custom()
             .addRequestHandlers(
                 LaunchHandler.handle({logger, textCreator, tsService, displayCreator}),
-                GetPointDayTrashesHandler,
-                GetRegisteredContent,
+                GetPointDayTrashesHandler.handle({logger, textCreator, tsService, displayCreator}),
+                GetRegisteredContentHandler.handle({logger, textCreator, tsService, displayCreator}),
                 GetDayFromTrashTypeIntent,
                 CheckReminderHandler,
                 SetReminderHandler,
@@ -215,116 +217,6 @@ const LaunchRequestHandler = {
         responseBuilder.speak(base_message);
         responseBuilder.withShouldEndSession(true);
         return responseBuilder.getResponse();
-    }
-};
-
-const GetPointDayTrashesHandler = {
-    canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === "IntentRequest" &&
-                handlerInput.requestEnvelope.request.intent.name === "GetPointDayTrashes";
-    },
-    async handle(handlerInput: HandlerInput){
-        const {responseBuilder, requestEnvelope} = handlerInput;
-        const init_ready = init(handlerInput, { client: true, display: true });
-        const accessToken = requestEnvelope.session?.user.accessToken;
-        if(accessToken == null) {
-            // トークン未定義の場合はユーザーに許可を促す
-            return responseBuilder
-                .speak(textCreator.getMessage("HELP_ACCOUNT"))
-                .withLinkAccountCard()
-                .getResponse();
-        }
-        const intentRequest: IntentRequest = requestEnvelope.request as IntentRequest
-        const resolutions = intentRequest.intent.slots?.DaySlot.resolutions;
-        if(resolutions && resolutions.resolutionsPerAuthority && resolutions.resolutionsPerAuthority[0].status.code === "ER_SUCCESS_MATCH") {
-            let slotValue = Number(resolutions.resolutionsPerAuthority![0].values[0].value.id);
-
-            await init_ready
-            const trash_result = await tsService.getTrashData(accessToken)
-            if (!trash_result || trash_result?.status === "error") {
-                return responseBuilder
-                    .speak(textCreator.getMessage(trash_result.msgId!))
-                    .withShouldEndSession(true)
-                    .getResponse();
-            }
-
-            let target_day = 0;
-            if (slotValue >= 0 && slotValue <= 2) {
-                target_day = PointDayValue[slotValue].value;
-            } else {
-                target_day = tsService.getTargetDayByWeekday(PointDayValue[slotValue].weekday!) || 0;
-            }
-
-            const promise_list = [
-                tsService.checkEnableTrashes(trash_result.response!, target_day),
-                tsService.checkEnableTrashes(trash_result.response!, target_day + 1),
-                tsService.checkEnableTrashes(trash_result.response!, target_day + 2)
-            ];
-            const all = await Promise.all(promise_list);
-            const first = all[0];
-            const second = all[1];
-            const third = all[2];
-            responseBuilder.speak(textCreator.getPointdayResponse(String(slotValue), first!));
-            if (isSupportedAPL(requestEnvelope)) {
-                const schedule_directive = displayCreator.getThrowTrashesDirective(target_day, [
-                    { data: first, date: tsService.calculateLocalTime(target_day) },
-                    { data: second, date: tsService.calculateLocalTime(target_day + 1) },
-                    { data: third, date: tsService.calculateLocalTime(target_day + 2) },
-                ]);
-                responseBuilder.addDirective(schedule_directive).withShouldEndSession(true);
-            }
-
-            await setUpSellMessage(handlerInput, responseBuilder);
-            return responseBuilder.getResponse();
-        } else {
-            const speechOut = textCreator.getMessage("ASK_A_DAY");
-            return responseBuilder
-                .speak(speechOut)
-                .reprompt(speechOut)
-                .getResponse();
-        }
-    }
-};
-
-const GetRegisteredContent = {
-    canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === "IntentRequest" &&
-                handlerInput.requestEnvelope.request.intent.name === "GetRegisteredContent";
-    },
-    async handle(handlerInput: HandlerInput) {
-        const {requestEnvelope, responseBuilder} = handlerInput;
-        const init_ready = init(handlerInput, {client: true, display: true});
-        const accessToken = requestEnvelope.session?.user.accessToken;
-        if(accessToken == null) {
-            // トークン未定義の場合はユーザーに許可を促す
-            return responseBuilder
-                .speak(textCreator.getMessage("HELP_ACCOUNT"))
-                .withLinkAccountCard()
-                .getResponse();
-        }
-
-        try {
-            await init_ready
-            const trash_result = await tsService.getTrashData(accessToken)
-            if (!trash_result || trash_result?.status === "error") {
-                return responseBuilder
-                    .speak(textCreator.getMessage(trash_result.msgId!))
-                    .withShouldEndSession(true)
-                    .getResponse();
-            }
-            const schedule_data = textCreator.getAllSchedule(trash_result.response!);
-            if (isSupportedAPL(requestEnvelope)) {
-                responseBuilder.addDirective(
-                    displayCreator.getShowScheduleDirective(schedule_data)
-                ).withShouldEndSession(true);
-            }
-            const card_text = textCreator.getRegisterdContentForCard(schedule_data);
-
-            return responseBuilder.speak(textCreator.getMessage("NOTICE_SEND_SCHEDULE")).withSimpleCard(textCreator.registerd_card_title, card_text).getResponse();
-        }catch(err: any){
-            logger.error(err)
-            return responseBuilder.speak(textCreator.getMessage("ERROR_GENERAL")).withShouldEndSession(true).getResponse();
-        }
     }
 };
 const GetDayFromTrashTypeIntent = {

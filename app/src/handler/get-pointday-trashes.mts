@@ -1,7 +1,7 @@
 import { Handler, HandlerParams } from "./types.mjs";
 import { RequestHandler, HandlerInput } from "ask-sdk-core";
 import { IntentRequest, RequestEnvelope } from "ask-sdk-model";
-import { isSupportedAPL, setUpSellMessage } from "../common/common.mjs";
+import { isSupportedAPL, setUpSellMessage } from "../common/handler-helper.mjs";
 
 const PointDayValue = [
     {value:0},

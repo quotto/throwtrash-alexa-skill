@@ -15,7 +15,7 @@ export const MockedTextCreator = {
         getReminderComplete: jest.fn<(week_type: string, time: string)=>string>(),
         getTrashName: jest.fn<(trash_type: string)=>string>(),
         getAllSchedule: jest.fn<(trashes: TrashData[])=>TrashDataText[]>(),
-        getRegisterdContentForCard: jest.fn<(schedule_data: TrashDataText[])=>string>(),
+        getRegisterdContentForCard: jest.fn<(schedule_data: TrashDataText[])=>string>()
     } as unknown as TextCreator)
 }
 

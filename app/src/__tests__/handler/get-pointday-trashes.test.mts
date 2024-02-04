@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { HandlerInput, RequestHandler } from 'ask-sdk';
-import { IntentRequest } from 'ask-sdk-model';
+import { IntentRequest, slu } from 'ask-sdk-model';
 import { TextCreator, TrashData, TrashScheduleService, TrashTypeValue, getLogger } from 'trash-common';
 import { DisplayCreator } from '../../display-creator.mjs';
 import { MockedDisplayCreator, MockedHandlerInput, MockedTextCreator, MockedTrashScheduleService } from './__mocks__/trash-common.mjs';
@@ -73,6 +73,7 @@ describe('GetPointdayTrashesHandler', () => {
     {title: "ディスプレイ対応-木曜日", supportedDisplay: true, slot: {name: "木曜日", id: "7"}, dayIndex: 4,currentDate: new Date(new Date('2020-01-01T00:00:00Z').getTime() + timezoneOffset * 60 * 1000)},
     {title: "ディスプレイ対応-金曜日", supportedDisplay: true, slot: {name: "金曜日", id: "8"}, dayIndex: 5,currentDate: new Date(new Date('2020-01-01T00:00:00Z').getTime() + timezoneOffset * 60 * 1000)},
     {title: "ディスプレイ対応-土曜日", supportedDisplay: true, slot: {name: "土曜日", id: "9"}, dayIndex: 6,currentDate: new Date(new Date('2020-01-01T00:00:00Z').getTime() + timezoneOffset * 60 * 1000)},
+    {title: "ディスプレイ非対応-今日", supportedDisplay: true, slot: {name: "今日", id: "0"}, dayIndex: 0,currentDate: new Date(new Date('2020-01-01T00:00:00Z').getTime() + timezoneOffset * 60 * 1000)}
   ])('正常実行（$title）', async ({title, supportedDisplay, slot, dayIndex, currentDate}) => {
     (mockedTrashScheduleService.getTrashData as jest.Mock).mockImplementation(async(access_token)=>{ 
       return {status: 'success', response: testTrashData, checkedNextday: true }
@@ -135,6 +136,80 @@ describe('GetPointdayTrashesHandler', () => {
           { data: [{ name: testTrashData[thirdDayIndex].trash_val, type: testTrashData[thirdDayIndex].type }], date: mockedTrashScheduleService.calculateLocalTime(dayIndex+2) }
         ]
       });
+    } else {
+      console.log("ディスプレイ非対応デバイスの場合はディスプレイディレクティブを追加しないこと");
+      expect(mockedHandlerInput.responseBuilder.addDirective).not.toHaveBeenCalled();
     }
+  });
+  test('トークン未定義の場合はユーザーに許可を促す', async () => {
+    mockedHandlerInput.requestEnvelope.session = undefined;
+    (mockedTextCreator.getMessage as jest.Mock).mockReturnValue('アカウントリンクを行ってください。');
+    const handler: RequestHandler = 
+      GetPointDayTrashesHandler.handle(
+        { logger: getLogger(),  textCreator: mockedTextCreator, tsService: mockedTrashScheduleService, displayCreator: mockedDisplayCreator}
+      );
+
+    console.log("LaunchRequestをハンドルすること")
+    expect(handler.canHandle(mockedHandlerInput)).toBe(true);
+    
+    const response = await handler.handle(mockedHandlerInput);
+
+    console.log("トークン未定義の場合はユーザーに許可を促すこと");
+    expect(mockedHandlerInput.responseBuilder.speak).toHaveBeenCalledWith('アカウントリンクを行ってください。');
+    console.log("リンクアカウントカードが返却されること");
+    expect(mockedHandlerInput.responseBuilder.withLinkAccountCard).toHaveBeenCalled();
+
+    // sessionのリストア
+    mockedHandlerInput.requestEnvelope.session = {
+      new: false,
+      sessionId: 'testSessionId',
+      application: {
+        applicationId: 'testApplicationId'
+      },
+      attributes: {},
+      user: {
+        userId: 'testUserId',
+        accessToken: 'testAccessToken',
+        permissions: {
+          consentToken: 'testConsentToken'
+        }
+      }
+    }
+  });
+  test('ゴミ出し予定の取得に失敗した場合はエラーメッセージを返す', async () => {
+    (mockedTrashScheduleService.getTrashData as jest.Mock).mockImplementation(async(accessToken) => {
+      return { 
+        status: 'error', 
+        msgId: 'ERROR_GET_TRASH_SCHEDULE'
+      };
+    });
+
+    const handler: RequestHandler = 
+      GetPointDayTrashesHandler.handle(
+        { logger: getLogger(),  textCreator: mockedTextCreator, tsService: mockedTrashScheduleService, displayCreator: mockedDisplayCreator}
+      );
+
+    await handler.handle(mockedHandlerInput);
+
+    console.log("エラーメッセージを設定すること");
+    expect(mockedTextCreator.getMessage).toHaveBeenCalledWith('ERROR_GET_TRASH_SCHEDULE');
+    console.log("セッションを終了すること");
+    expect(mockedHandlerInput.responseBuilder.withShouldEndSession).toHaveBeenCalledWith(true);
+  });
+  test.each(
+    [{ title: "resolutionsがundefined", resolutions: undefined },
+      { title: "resolutions.resolutionsPerAuthorityがundefined", resolutions: { resolutionsPerAuthority: undefined } },
+      { title: "resolutions.resolutionsPerAuthority[0].status.codeがエラー", resolutions: { resolutionsPerAuthority: [ { authority: 'amzn1.er-authority.echo-sdk.<skill-id>.DaySlot', status: { code: 'ER_ERROR_EXCEPTION' }, values: [ { value: { name: '今日', id: '0' } } ] } ] } as slu.entityresolution.Resolutions}
+    ]
+      )('スロット値が取得できない場合は確認メッセージを返却する（$title）', async ({title, resolutions}) => {
+    (mockedHandlerInput.requestEnvelope.request as IntentRequest).intent.slots!.DaySlot.resolutions = resolutions;
+    await GetPointDayTrashesHandler.handle({
+      logger: getLogger(),
+      textCreator: mockedTextCreator,
+      tsService: mockedTrashScheduleService,
+      displayCreator: mockedDisplayCreator
+    }).handle(mockedHandlerInput);
+    console.log("スロット値が取得できない場合は確認メッセージを返却すること");
+    expect(mockedTextCreator.getMessage).toHaveBeenCalledWith('ASK_A_DAY');
   });
 });

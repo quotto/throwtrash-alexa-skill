@@ -1,7 +1,7 @@
 import { HandlerInput, RequestHandler } from "ask-sdk";
 import { Handler, HandlerParams } from "./types.mjs";
 import { GetTrashDataResult } from "trash-common";
-import { isSupportedAPL } from "../common/common.mjs";
+import { isSupportedAPL } from "../common/handler-helper.mjs";
 
 class LaunchHandler extends Handler {
     public static handle(params: HandlerParams): RequestHandler {

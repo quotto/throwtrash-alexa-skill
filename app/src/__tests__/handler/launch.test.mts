@@ -37,7 +37,6 @@ describe('LaunchHandler', () => {
       } 
     } : undefined;
 
-    console.log(title)
     // currentDateから1日後の日付
     const nextDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
     // currentDate2
