@@ -29,6 +29,8 @@ export const MockedTrashScheduleService =  {
         textCreator: jest.fn(),
         getTargetDayByWeekday: jest.fn(),
         getEnableTrashData: jest.fn(),
+        getDayByTrashType: jest.fn(),
+        compareMultipleTrashText: jest.fn(),
     } as unknown as TrashScheduleService)
 }
 

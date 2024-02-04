@@ -4,6 +4,8 @@ import { DisplayCreator } from "./display-creator.mjs";
 import LaunchHandler from "./handler/launch.mjs";
 import { GetPointDayTrashesHandler } from "./handler/get-pointday-trashes.mjs";
 import { GetRegisteredContentHandler } from "./handler/get-registered-content.mjs";
+import { GetDayByTrashTypeHandler } from "./handler/get-day-by-trash-type.mjs";
+
 import  { Skill, SkillBuilders, DefaultApiClient, HandlerInput, ResponseBuilder  } from "ask-sdk-core";
 import { services,RequestEnvelope,IntentRequest, interfaces } from "ask-sdk-model";
 import { Context } from "aws-lambda";
@@ -140,7 +142,7 @@ export const handler  = async function(event:RequestEnvelope ,context: Context) 
                 LaunchHandler.handle({logger, textCreator, tsService, displayCreator}),
                 GetPointDayTrashesHandler.handle({logger, textCreator, tsService, displayCreator}),
                 GetRegisteredContentHandler.handle({logger, textCreator, tsService, displayCreator}),
-                GetDayFromTrashTypeIntent,
+                GetDayByTrashTypeHandler.handle({logger, textCreator, tsService, displayCreator}),
                 CheckReminderHandler,
                 SetReminderHandler,
                 PurchaseHandler,
@@ -159,146 +161,6 @@ export const handler  = async function(event:RequestEnvelope ,context: Context) 
     return skill.invoke(event,context).catch(error=>{
         console.error(error);
     });
-};
-
-const LaunchRequestHandler = {
-    canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === "LaunchRequest";
-    },
-    async handle(handlerInput: HandlerInput){
-        logger.debug(JSON.stringify(handlerInput));
-        const {requestEnvelope, responseBuilder} = handlerInput;
-        const init_ready = init(handlerInput, {client: true, display: true});
-        const accessToken: string|undefined = requestEnvelope.session ? requestEnvelope.session.user.accessToken : undefined;
-        if(!accessToken) {
-            // トークン未定義の場合はユーザーに許可を促す
-            return responseBuilder
-                .speak(textCreator.getMessage("HELP_ACCOUNT"))
-                .withLinkAccountCard()
-                .getResponse();
-        }
-        await init_ready
-        const data: GetTrashDataResult | undefined = await tsService.getTrashData(accessToken)
-        if (data.status === "error") {
-            return responseBuilder
-                .speak(textCreator.getMessage(data.msgId!))
-                .withShouldEndSession(true)
-                .getResponse();
-        }
-
-        const promise_list = [
-            tsService.checkEnableTrashes(data?.response!, 0),
-            tsService.checkEnableTrashes(data?.response!, 1),
-            tsService.checkEnableTrashes(data?.response!, 2)
-        ];
-        const threedaysTrashSchedule = await Promise.all(promise_list);
-        const first = threedaysTrashSchedule[0];
-        const second = threedaysTrashSchedule[1];
-        const third = threedaysTrashSchedule[2];
-
-        if (isSupportedAPL(requestEnvelope)) {
-            const schedule_directive = displayCreator.getThrowTrashesDirective(0, [
-                { data: first, date: tsService.calculateLocalTime(0) },
-                { data: second, date: tsService.calculateLocalTime(1) },
-                { data: third, date: tsService.calculateLocalTime(2) },
-            ])
-            responseBuilder.addDirective(schedule_directive).withShouldEndSession(true);
-        }
-
-
-        const request: any = handlerInput.requestEnvelope.request
-        const metadata: any = request.metadata;
-
-        // 午後であれば明日のゴミ出し予定を答える
-        const offset = data.checkedNextday && tsService.calculateLocalTime(0).getHours() >= 12 ? 1 : 0;
-        const base_message: string = textCreator.getPointdayResponse(String(offset), threedaysTrashSchedule[offset]);
-
-        logger.debug("From Regular Action");
-        responseBuilder.speak(base_message);
-        responseBuilder.withShouldEndSession(true);
-        return responseBuilder.getResponse();
-    }
-};
-const GetDayFromTrashTypeIntent = {
-    canHandle(handlerInput: HandlerInput) {
-        return handlerInput.requestEnvelope.request.type === "IntentRequest" &&
-                handlerInput.requestEnvelope.request.intent.name === "GetDayFromTrashType";
-    },
-    async handle(handlerInput: HandlerInput) {
-        const {requestEnvelope, responseBuilder} = handlerInput;
-        const init_ready = init(handlerInput, { client: true, display: false });
-        const accessToken = requestEnvelope.session?.user.accessToken;
-        if(accessToken == null) {
-            // トークン未定義の場合はユーザーに許可を促す
-            return responseBuilder
-                .speak(textCreator.getMessage("HELP_ACCOUNT"))
-                .withLinkAccountCard()
-                .getResponse();
-        }
-        const resolutions = (requestEnvelope.request as IntentRequest).intent.slots?.TrashTypeSlot.resolutions;
-        await  init_ready;
-        const trash_result = await tsService.getTrashData(accessToken);
-        if (!trash_result || trash_result?.status === "error") {
-            return responseBuilder
-                .speak(textCreator.getMessage(trash_result.msgId!))
-                .withShouldEndSession(true)
-                .getResponse();
-        }
-        if(resolutions && resolutions.resolutionsPerAuthority![0].status.code === "ER_SUCCESS_MATCH") {
-            const slotValue = resolutions.resolutionsPerAuthority![0].values[0].value;
-            const trash_data = tsService.getDayByTrashType(trash_result.response!, slotValue.id);
-            if(trash_data && trash_data.length > 0) {
-                logger.debug("Find Match Trash:"+JSON.stringify(trash_data));
-                responseBuilder
-                    .speak(textCreator.getDayByTrashTypeMessage({type: slotValue.id,name: slotValue.name}, trash_data))
-                await setUpSellMessage(handlerInput, responseBuilder);
-                return responseBuilder.getResponse();
-            }
-        }
-        // ユーザーの発話がスロット以外 または 合致するデータが登録情報に無かった場合はAPIでのテキスト比較を実施する
-        logger.debug("Not match resolutions:"+JSON.stringify(requestEnvelope));
-
-        // ユーザーが発話したゴミ
-        const speeched_trash: string = (requestEnvelope.request as IntentRequest).intent .slots?.TrashTypeSlot.value as string;
-        logger.debug("check freetext trash:" + speeched_trash);
-        // 登録タイプotherのみを比較対象とする
-        const other_trashes = trash_result.response?.filter((value)=>{
-            return value.type === "other"
-        });
-
-        let trash_data: RecentTrashDate[] = [];
-
-        // otherタイプの登録があれば比較する
-        let speech_prefix = "";
-        if(other_trashes && other_trashes.length > 0) {
-            try {
-                const compare_result: CompareApiResult[] =
-                    await tsService.compareMultipleTrashText(speeched_trash,other_trashes.map((trash: TrashData): string => trash.trash_val || ""));
-                logger.info("compare result:"+JSON.stringify(compare_result));
-                const max_data = {trash: "",score: 0, index: 0};
-                compare_result.forEach((result,index)=>{
-                    if(result.score >= max_data.score) {
-                        max_data.trash = result.match
-                        max_data.score = result.score
-                        max_data.index = index
-                    }
-                });
-                if(max_data.score >= 0.5) {
-                    if(max_data.score < 0.7 && max_data.score >= 0.5) {
-                        speech_prefix = `${max_data.trash} ですか？`;
-                    }
-                    trash_data = tsService.getDayByTrashType([other_trashes[max_data.index]],"other");
-                }
-            } catch(error: any) {
-                logger.error(error);
-                return responseBuilder.speak(textCreator.getMessage("ERROR_UNKNOWN")).withShouldEndSession(true).getResponse();
-            }
-        }
-        responseBuilder.speak(speech_prefix + textCreator.getDayByTrashTypeMessage({type: "other", name: speeched_trash}, trash_data));
-
-        await setUpSellMessage(handlerInput, responseBuilder);
-        return responseBuilder.getResponse();
-    }
 };
 
 const CheckReminderHandler = {
