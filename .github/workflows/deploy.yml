@@ -80,7 +80,8 @@ jobs:
           cp package.json package-lock.json libs/nodejs
           # プロダクション用のパッケージだけインストールする
           npm install --prefix libs/nodejs --production
-      - name: init
+      - uses: hashicorp/setup-terraform@v3
+      - name: terraform-init
         run: |
           # Terraformの初期化
           terraform init -backend-config="region=${{ vars.AWS_REGION }}" -backend-config="bucket=throwtrash-tfstate-${{ vars.AWS_REGION }}"
@@ -91,7 +92,7 @@ jobs:
           echo "ReminderProductID=\"${{ secrets.REMINDER_PRODUCT_ID }}\"" >> terraform.tfvars
           echo "RunLevel=\"${{ vars.RUN_LEVEL }}\"" >> terraform.tfvars
           echo "region=\"${{ vars.AWS_REGION }}\"" >> terraform.tfvars
-      - name: plan
+      - name: terraform-plan
         id: terraform-plan
         run: |
           # Terraformの実行
@@ -100,7 +101,7 @@ jobs:
             terraform plan -var-file=terraform.tfvars -no-color
             echo EOF
           } >> "$GITHUB_OUTPUT"
-      - name: Add PR Comment
+      - name: add-pr-comment
         uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
         with:
@@ -112,7 +113,7 @@ jobs:
               issue_number: context.issue.number,
               body: `\`\`\`${{ steps.terraform-plan.outputs.plan  }} \`\`\``
             });
-      - name: deploy
+      - name: terraform-apply
         if: github.event_name == 'push'
         run: |
           terraform apply -auto-approve -var-file=terraform.tfvars
