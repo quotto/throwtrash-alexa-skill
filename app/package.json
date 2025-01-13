@@ -18,7 +18,7 @@
     "lodash-es": "^4.17.21",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
-    "trash-common": "github:quotto/throwtrash-common-module#v3.0",
+    "trash-common": "github:quotto/throwtrash-common-module#fix/#31-mod-interval-check",
     "what-the-pack": "^2.0.3"
   },
   "devDependencies": {

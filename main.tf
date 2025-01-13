@@ -12,7 +12,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "${var.region}"
+  region = "ap-northeast-1"
 }
 
 data "aws_region" "current" {}
@@ -58,14 +58,13 @@ variable "ReminderProductID" {
   description = "The reminder product ID"
 }
 
-variable "region" {
+variable "stage" {
   type        = string
-  default     = "us-west-2"
-  description = "The region"
+  default     = "dev"
 }
 
 resource "aws_iam_policy" "LambdaExecPolicy" {
-  name   = "throwtrash-lambda-policy-${var.region}"
+  name   = "throwtrash-skill-lambda-policy"
   tags = {
     app   = "throwtrash"
     group = "skill"
@@ -78,14 +77,24 @@ resource "aws_iam_policy" "LambdaExecPolicy" {
       "Effect": "Allow",
       "Action": "dynamodb:*",
       "Resource": [
-        "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/throwtrash-db-schedule",
-        "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/throwtrash-db-accesstoken"
+        "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/TrashSchedule",
+        "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/throwtrash-shared-schedule",
+        "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/throwtrash-backend-accesstoken"
       ]
     },
     {
       "Effect": "Allow",
       "Action": "lambda:*",
       "Resource": "${aws_lambda_function.ThrowTrashSkill.arn}"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+      ],
+      "Resource": "*"
     },
     {
       "Effect": "Allow",
@@ -107,14 +116,11 @@ EOF
 }
 
 resource "aws_iam_role" "LambdaExecRole" {
-  name               = "throwtrash-lambda-role-${var.region}"
+  name               = "throwtrash-skill-lambda-role"
   tags = {
     app   = "throwtrash"
     group = "skill"
   }
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-  ]
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -137,20 +143,15 @@ resource "aws_iam_role_policy_attachment" "LambdaRolePolicyAttachment" {
 }
 
 resource "aws_s3_bucket" "PreferenceBucket" {
-  bucket = "throwtrash-skill-preference-${var.region}"
+  bucket = "throwtrash-skill-preference-${var.stage}"
   tags = {
     app   = "throwtrash"
     group = "skill"
   }
-}
-
-resource "aws_s3_bucket_acl" "PreferenceBucketAcl" {
-  bucket = aws_s3_bucket.PreferenceBucket.id
-  acl    = "private"
 }
 
 resource "aws_s3_bucket" "RequestLogBucket" {
-  bucket = "throwtrash-skill-request-logs-${var.region}"
+  bucket = "throwtrash-skill-request-logs-${var.stage}"
 
   tags = {
     app   = "throwtrash"
@@ -158,13 +159,8 @@ resource "aws_s3_bucket" "RequestLogBucket" {
   }
 }
 
-resource "aws_s3_bucket_acl" "RequestLogBucketAcl" {
-  bucket = aws_s3_bucket.RequestLogBucket.id
-  acl    = "private"
-}
-
 resource "aws_lambda_function" "ThrowTrashSkill" {
-  function_name = "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:ThrowTrashSkill"
+  function_name = "ThrowTrashSkill"
   role          = aws_iam_role.LambdaExecRole.arn
   handler       = "index.handler"
   runtime       = "nodejs18.x"
@@ -173,7 +169,6 @@ resource "aws_lambda_function" "ThrowTrashSkill" {
 
   environment {
     variables = {
-      APP_REGION           = var.region
       APP_ID               = var.AppID
       RUNLEVEL             = var.RunLevel
       MECAB_API_URL        = var.ApiUrl
