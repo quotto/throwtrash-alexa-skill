@@ -107,7 +107,7 @@ resource "aws_iam_policy" "LambdaExecPolicy" {
         "${aws_s3_bucket.PreferenceBucket.arn}",
         "${aws_s3_bucket.PreferenceBucket.arn}/*",
         "${aws_s3_bucket.RequestLogBucket.arn}",
-        "${aws_s3_bucket.RequestLogBucket.arn}/*"
+        "${aws_s3_bucket.RequestLogBucket.arn}/*",
         "${aws_s3_bucket.NewPreferenceBucket.arn}",
         "${aws_s3_bucket.NewPreferenceBucket.arn}/*",
         "${aws_s3_bucket.NewRequestLogBucket.arn}",
