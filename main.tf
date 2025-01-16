@@ -196,6 +196,7 @@ resource "aws_lambda_function" "ThrowTrashSkill" {
       MECAB_API_URL        = var.ApiUrl
       MECAB_API_KEY        = var.ApiKey
       REMINDER_PRODUCT_ID  = var.ReminderProductID
+      PREFERENCE_BUCKET_NAME = aws_s3_bucket.NewPreferenceBucket.bucket
     }
   }
   timeout = 30

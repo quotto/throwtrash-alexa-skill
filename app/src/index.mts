@@ -24,7 +24,7 @@ const PointDayValue = [
     {value:9,weekday:6}
 ];
 
-const persistenceAdapter = new S3PersistenceAdapter({bucketName: `throwtrash-skill-preference-${process.env.APP_REGION}`});
+const persistenceAdapter = new S3PersistenceAdapter({bucketName: process.env.PREFERENCE_BUCKET_NAME!});
 
 interface ClientInfo {
     locale: string,

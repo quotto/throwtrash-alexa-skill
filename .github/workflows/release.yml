@@ -15,9 +15,9 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v3
         id: configure-aws-credentials
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/throwtrash-skill-deploy-role
           role-session-name: GitHubActions
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-region: ${{ vars.AWS_DEFAULT_REGION }}
           output-credentials: true
       - name: Versioning
         id: versioning
@@ -26,7 +26,7 @@ jobs:
           export AWS_ACCESS_KEY_ID=${{ steps.configure-aws-credentials.outputs.aws-access-key-id }}
           export AWS_SECRET_ACCESS_KEY=${{ steps.configure-aws-credentials.outputs.aws-secret-access-key }}
           export AWS_SESSION_TOKEN=${{ steps.configure-aws-credentials.outputs.aws-session-token }}
-          export AWS_REGION=${{ vars.AWS_REGION }}
+          export AWS_REGION=${{ vars.AWS_DEFAULT_REGION }}
 
           PUBLISH_VERSION=$(aws lambda publish-version --function-name ThrowTrashSkill | jq -r '.Version')
           echo "PUBLISH_VERSION=${PUBLISH_VERSION}" >>  $GITHUB_OUTPUT
