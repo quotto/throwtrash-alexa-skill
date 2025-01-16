@@ -38,9 +38,9 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v3
         id: configure-aws-credentials
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/throwtrash-skill-deploy-role
           role-session-name: GitHubActions
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-region: ${{ vars.AWS_DEFAULT_REGION }}
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
@@ -80,39 +80,23 @@ jobs:
           cp package.json package-lock.json libs/nodejs
           # プロダクション用のパッケージだけインストールする
           npm install --prefix libs/nodejs --production
-      - name: init
+      - uses: hashicorp/setup-terraform@v3
+      - name: terraform-init
         run: |
           # Terraformの初期化
-          terraform init -backend-config="region=${{ vars.AWS_REGION }}" -backend-config="bucket=throwtrash-tfstate-${{ vars.AWS_REGION }}"
+          terraform init -backend-config="region=${{ vars.AWS_DEFAULT_REGION }}" -backend-config="bucket=throwtrash-tfstate-${{ needs.set-stage.outputs.STAGE }}"
           # TFVARファイルを作成
           echo "AppID=\"${{ secrets.APP_ID }}\"" >> terraform.tfvars
           echo "ApiUrl=\"${{ secrets.MECAB_API_URL }}\"" >> terraform.tfvars
           echo "ApiKey=\"${{ secrets.MECAB_API_KEY }}\"" >> terraform.tfvars
           echo "ReminderProductID=\"${{ secrets.REMINDER_PRODUCT_ID }}\"" >> terraform.tfvars
           echo "RunLevel=\"${{ vars.RUN_LEVEL }}\"" >> terraform.tfvars
-          echo "region=\"${{ vars.AWS_REGION }}\"" >> terraform.tfvars
-      - name: plan
+          echo "stage=\"${{ needs.set-stage.outputs.STAGE }}\"" >> terraform.tfvars
+      - name: terraform-plan
         id: terraform-plan
         run: |
-          # Terraformの実行
-          {
-            echo "plan<<EOF"
-            terraform plan -var-file=terraform.tfvars -no-color
-            echo EOF
-          } >> "$GITHUB_OUTPUT"
-      - name: Add PR Comment
-        uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: `\`\`\`${{ steps.terraform-plan.outputs.plan  }} \`\`\``
-            });
-      - name: deploy
+          terraform plan -var-file=terraform.tfvars -no-color
+      - name: terraform-apply
         if: github.event_name == 'push'
         run: |
           terraform apply -auto-approve -var-file=terraform.tfvars
