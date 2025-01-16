@@ -15,7 +15,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v3
         id: configure-aws-credentials
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/throwtrash-skill-deploy-role
           role-session-name: GitHubActions
           aws-region: ${{ vars.AWS_REGION }}
           output-credentials: true
