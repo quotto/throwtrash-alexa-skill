@@ -108,6 +108,10 @@ resource "aws_iam_policy" "LambdaExecPolicy" {
         "${aws_s3_bucket.PreferenceBucket.arn}/*",
         "${aws_s3_bucket.RequestLogBucket.arn}",
         "${aws_s3_bucket.RequestLogBucket.arn}/*"
+        "${aws_s3_bucket.NewPreferenceBucket.arn}",
+        "${aws_s3_bucket.NewPreferenceBucket.arn}/*",
+        "${aws_s3_bucket.NewRequestLogBucket.arn}",
+        "${aws_s3_bucket.NewRequestLogBucket.arn}/*"
       ]
     }
   ]
@@ -143,7 +147,7 @@ resource "aws_iam_role_policy_attachment" "LambdaRolePolicyAttachment" {
 }
 
 resource "aws_s3_bucket" "PreferenceBucket" {
-  bucket = "throwtrash-skill-preference-${var.stage}"
+  bucket = "throwtrash-skill-preference-${var.stage == "dev" ? "us-west-2" : data.aws_region.current.name}"
   tags = {
     app   = "throwtrash"
     group = "skill"
@@ -151,6 +155,24 @@ resource "aws_s3_bucket" "PreferenceBucket" {
 }
 
 resource "aws_s3_bucket" "RequestLogBucket" {
+  bucket = "throwtrash-skill-request-logs-${var.stage == "dev" ? "us-west-2" : data.aws_region.current.name}"
+
+  tags = {
+    app   = "throwtrash"
+    group = "skill"
+  }
+}
+
+
+resource "aws_s3_bucket" "NewPreferenceBucket" {
+  bucket = "throwtrash-skill-preference-${var.stage}"
+  tags = {
+    app   = "throwtrash"
+    group = "skill"
+  }
+}
+
+resource "aws_s3_bucket" "NewRequestLogBucket" {
   bucket = "throwtrash-skill-request-logs-${var.stage}"
 
   tags = {
