@@ -107,11 +107,7 @@ resource "aws_iam_policy" "LambdaExecPolicy" {
         "${aws_s3_bucket.PreferenceBucket.arn}",
         "${aws_s3_bucket.PreferenceBucket.arn}/*",
         "${aws_s3_bucket.RequestLogBucket.arn}",
-        "${aws_s3_bucket.RequestLogBucket.arn}/*",
-        "${aws_s3_bucket.NewPreferenceBucket.arn}",
-        "${aws_s3_bucket.NewPreferenceBucket.arn}/*",
-        "${aws_s3_bucket.NewRequestLogBucket.arn}",
-        "${aws_s3_bucket.NewRequestLogBucket.arn}/*"
+        "${aws_s3_bucket.RequestLogBucket.arn}/*"
       ]
     }
   ]
@@ -147,24 +143,6 @@ resource "aws_iam_role_policy_attachment" "LambdaRolePolicyAttachment" {
 }
 
 resource "aws_s3_bucket" "PreferenceBucket" {
-  bucket = "throwtrash-skill-preference-${var.stage == "dev" ? "us-west-2" : data.aws_region.current.name}"
-  tags = {
-    app   = "throwtrash"
-    group = "skill"
-  }
-}
-
-resource "aws_s3_bucket" "RequestLogBucket" {
-  bucket = "throwtrash-skill-request-logs-${var.stage == "dev" ? "us-west-2" : data.aws_region.current.name}"
-
-  tags = {
-    app   = "throwtrash"
-    group = "skill"
-  }
-}
-
-
-resource "aws_s3_bucket" "NewPreferenceBucket" {
   bucket = "throwtrash-skill-preference-${var.stage}"
   tags = {
     app   = "throwtrash"
@@ -172,12 +150,28 @@ resource "aws_s3_bucket" "NewPreferenceBucket" {
   }
 }
 
-resource "aws_s3_bucket" "NewRequestLogBucket" {
+resource "aws_s3_bucket_ownership_controls" "PreferenceBucketOwnership" {
+  bucket = aws_s3_bucket.PreferenceBucket.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket" "RequestLogBucket" {
   bucket = "throwtrash-skill-request-logs-${var.stage}"
 
   tags = {
     app   = "throwtrash"
     group = "skill"
+  }
+}
+
+resource "aws_s3_bucket_ownership_controls" "RequestLogBucketOwnership" {
+  bucket = aws_s3_bucket.RequestLogBucket.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
   }
 }
 
@@ -196,7 +190,7 @@ resource "aws_lambda_function" "ThrowTrashSkill" {
       MECAB_API_URL        = var.ApiUrl
       MECAB_API_KEY        = var.ApiKey
       REMINDER_PRODUCT_ID  = var.ReminderProductID
-      PREFERENCE_BUCKET_NAME = aws_s3_bucket.NewPreferenceBucket.bucket
+      PREFERENCE_BUCKET_NAME = aws_s3_bucket.PreferenceBucket.bucket
     }
   }
   timeout = 30
