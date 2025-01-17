@@ -150,12 +150,28 @@ resource "aws_s3_bucket" "PreferenceBucket" {
   }
 }
 
+resource "aws_s3_bucket_ownership_controls" "PreferenceBucketOwnership" {
+  bucket = aws_s3_bucket.PreferenceBucket.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
 resource "aws_s3_bucket" "RequestLogBucket" {
   bucket = "throwtrash-skill-request-logs-${var.stage}"
 
   tags = {
     app   = "throwtrash"
     group = "skill"
+  }
+}
+
+resource "aws_s3_bucket_ownership_controls" "RequestLogBucketOwnership" {
+  bucket = aws_s3_bucket.RequestLogBucket.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
   }
 }
 
