@@ -6,3 +6,4 @@ app/libs
 app/**/*.zip
 node_modules
 .terraform
+terraform.tfvars
