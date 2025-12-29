@@ -1,10 +1,15 @@
 import { DisplayCreator } from "../display-creator.mjs"
 const displayCreator = new DisplayCreator("ja-JP")
 import { cloneDeep } from "lodash-es"
+import fs from "fs";
 
-// ESモジュールでJSONファイルを読み込むためにrequireが必要になる
-import templateDocument from "../resource/display/apl_template_export.json" assert { type: "json" };
-import templateDataSources from "../resource/display/datasources.json" assert { type: "json" };
+// ESモジュールのJSON読み込みはfs経由で行う
+const templateDocument = JSON.parse(
+    fs.readFileSync(new URL("../resource/display/apl_template_export.json", import.meta.url), "utf-8")
+);
+const templateDataSources = JSON.parse(
+    fs.readFileSync(new URL("../resource/display/datasources.json", import.meta.url), "utf-8")
+);
 
 describe("getThrowTrashesDirective",()=>{
     it("single schedule",()=>{

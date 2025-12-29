@@ -6,7 +6,7 @@ import { services,RequestEnvelope,IntentRequest, interfaces } from "ask-sdk-mode
 import { Context } from "aws-lambda";
 import { DynamoDBAdapter } from "./dynamodb-adapter.mjs";
 import { getLogger } from "trash-common";
-import { S3PersistenceAdapter } from "ask-sdk-s3-persistence-adapter";
+import { S3PersistenceAdapter } from "./s3-persistence-adapter.mjs";
 let textCreator: TextCreator,tsService: TrashScheduleService, displayCreator: DisplayCreator
 const logger = getLogger();
 process.env.RUNLEVEL === "INFO" ? logger.setLevel_INFO() :  logger.setLevel_DEBUG();
@@ -201,10 +201,6 @@ const LaunchRequestHandler = {
             ])
             responseBuilder.addDirective(schedule_directive).withShouldEndSession(true);
         }
-
-
-        const request: any = handlerInput.requestEnvelope.request
-        const metadata: any = request.metadata;
 
         // 午後であれば明日のゴミ出し予定を答える
         const offset = data.checkedNextday && tsService.calculateLocalTime(0).getHours() >= 12 ? 1 : 0;

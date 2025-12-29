@@ -42,9 +42,9 @@ jobs:
           role-session-name: GitHubActions
           aws-region: ${{ vars.AWS_DEFAULT_REGION }}
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
+          node-version: '22.x'
       - name: Cache node modules
         env:
           cache-name: cache-node-modules

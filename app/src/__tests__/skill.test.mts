@@ -8,6 +8,7 @@ logger.setLevel_DEBUG();
 // デバッガログの出力設定
 process.env.RUNLEVEL = "DEBUG";
 process.env.APP_REGION = "us-west-2"
+process.env.APP_ID = "amzn1.ask.skill.test"
 
 import {VirtualAlexa} from "virtual-alexa";
 import {handler} from "../index.mjs"; //テスト実行ディレクトリを起点とした相対パス
@@ -16,13 +17,12 @@ import assert from "assert";
 const model_file_path = "./src/__tests__/model.json";
 
 describe("Launch",()=>{
-    let spyCalc: jest.SpiedFunction<(now: Date)=>Number>;
     let spyGetTrashData: jest.SpiedFunction<(access_token: string) => Promise<GetTrashDataResult>>;
     beforeEach(()=>{
-         spyCalc = jest.spyOn(Date,"now").mockReturnValue(1554253200000); // 2019-04-03(Wed) 01:00:00 UTC
-         spyGetTrashData = jest.spyOn(TrashScheduleService.prototype, "getTrashData").mockImplementation((access_token: string)=> {return new Promise(resolve => {
+         jest.spyOn(Date,"now").mockReturnValue(1554253200000); // 2019-04-03(Wed) 01:00:00 UTC
+         spyGetTrashData = jest.spyOn(TrashScheduleService.prototype, "getTrashData").mockImplementation((_access_token: string)=> {return new Promise(resolve => {
             let checkedNextday = true;
-            if (access_token === "testdata_with_checkedNextday_false") {
+            if (_access_token === "testdata_with_checkedNextday_false") {
                 checkedNextday = false;
             }
             resolve({
@@ -291,7 +291,7 @@ describe("GetDayFromTrashes",()=>{
         }
     });
     it("一致：登録情報が複数のotherで発話が標準スロット外",async()=>{
-        const spyCompare = jest.spyOn(TrashScheduleService.prototype, "compareMultipleTrashText").mockImplementation((target: string,comparisons: string[])=>{
+        const spyCompare = jest.spyOn(TrashScheduleService.prototype, "compareMultipleTrashText").mockImplementation((_target: string,_comparisons: string[])=>{
             const result: CompareApiResult[] = [
                 {match: "不燃ごみ", score:0.1},
                 {match: "ビンとペットボトル", score:0.8}
@@ -322,7 +322,7 @@ describe("GetDayFromTrashes",()=>{
         }
     });
     it("一致：登録情報が複数のotherで発話が標準スロット外かつ最高スコアが0.5より大きく0.7未満",async()=>{
-        const spyCompare = jest.spyOn(TrashScheduleService.prototype, "compareMultipleTrashText").mockImplementation((target: string,comparisons: string[])=>{
+        const spyCompare = jest.spyOn(TrashScheduleService.prototype, "compareMultipleTrashText").mockImplementation((_target: string,_comparisons: string[])=>{
             const result: CompareApiResult[] = [
                 {match: "不燃ごみ", score:0.6},
                 {match: "ビンとペットボトル", score:0.1}
@@ -451,7 +451,7 @@ describe("GetPointDayTrashes",()=>{
     let spyGetTrashData: any;
     beforeEach(()=>{
          jest.spyOn(Date,"now").mockReturnValue(1554253200000); // 2019-04-03(Wed) 01:00:00 UTC
-         spyGetTrashData = jest.spyOn(TrashScheduleService.prototype, "getTrashData").mockImplementation((access_token: string)=> {return new Promise(resolve => {
+         spyGetTrashData = jest.spyOn(TrashScheduleService.prototype, "getTrashData").mockImplementation((_access_token: string)=> {return new Promise(resolve => {
                 resolve({
                     status: "sccess",
                     response: [
