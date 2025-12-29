@@ -179,7 +179,7 @@ resource "aws_lambda_function" "ThrowTrashSkill" {
   function_name = "ThrowTrashSkill"
   role          = aws_iam_role.LambdaExecRole.arn
   handler       = "index.handler"
-  runtime       = "nodejs18.x"
+  runtime       = "nodejs22.x"
   source_code_hash = "${data.archive_file.app_zip.output_base64sha256}"
   filename = data.archive_file.app_zip.output_path
 
@@ -209,7 +209,7 @@ resource "aws_lambda_layer_version" "Layer" {
   layer_name    = "throwtrash-skill-libs"
   description   = "throwtrash-skill library"
   skip_destroy = true
-  compatible_runtimes = ["nodejs18.x"]
+  compatible_runtimes = ["nodejs22.x"]
   filename = data.archive_file.libs_zip.output_path
   source_code_hash = "${data.archive_file.libs_zip.output_base64sha256}"
 }
