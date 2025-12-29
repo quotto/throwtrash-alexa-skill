@@ -10,7 +10,7 @@ export class S3RequestLogger implements RequestLogger {
         this.client = new S3Client({region: region});
         return this;
     }
-    logRequest(request: RequestEnvelope, prefix: string): void {
+    logRequest(request: RequestEnvelope, _prefix: string): void {
         if(this.client) {
             this.client.send(new PutObjectCommand({
                 Bucket: `throwtrash-skill-request-logs-${this.region}`,

@@ -7,3 +7,4 @@ app/**/*.zip
 node_modules
 .terraform
 terraform.tfvars
+work/*

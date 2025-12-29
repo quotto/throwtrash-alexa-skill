@@ -3,26 +3,37 @@
 
 export default  {
   coverageProvider: "v8",
-    moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.mjs$': '$1',
+  moduleNameMapper: {
+    "^(\\.{1,2}/.*)\\.mjs$": "$1",
   },
-  // JestでESModuleのテストを有効にするためのパラメータ
-  preset: "ts-jest/presets/default-esm",
   roots: [
     "<rootDir>/src"
   ],
   moduleFileExtensions: ["mts", "ts", "tsx", "js", "mjs", "cjs"],
+  extensionsToTreatAsEsm: [".ts", ".tsx", ".mts"],
   testEnvironment: "node",
   testMatch: [
     "**/__tests__/**/*.+(mts|ts|tsx|js|mjs)",
     "**/?(*.)+(spec|test).+(mts|ts|tsx|js|mjs)"
   ],
+  transformIgnorePatterns: [
+    "/node_modules/(?!(trash-common)/)"
+  ],
   transform: {
-    "^.+\\.(mts|ts|tsx)$": [
-      "ts-jest",
-      // JestでESModuleのテストを有効にするためのパラメータ
+    "^.+\\.(m?ts|tsx|js|mjs)$": [
+      "@swc/jest",
       {
-        "useESM": true
+        "jsc": {
+          "parser": {
+            "syntax": "typescript",
+            "tsx": true,
+            "importAssertions": true
+          },
+          "target": "es2021"
+        },
+        "module": {
+          "type": "es6"
+        }
       }
     ]
   }
