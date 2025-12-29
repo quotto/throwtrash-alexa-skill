@@ -1,21 +1,25 @@
-import { DBAdapter, TrashSchedule } from "trash-common";
-import AWS from "aws-sdk";
-const dynamoClient: AWS.DynamoDB.DocumentClient  = new AWS.DynamoDB.DocumentClient({region: process.env.APP_REGION});
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, GetCommandOutput } from "@aws-sdk/lib-dynamodb";
 import crypto from "crypto";
+import { DBAdapter, TrashSchedule } from "trash-common";
+
+const dynamoClient = DynamoDBDocumentClient.from(
+    new DynamoDBClient({ region: process.env.APP_REGION })
+);
 
 export class DynamoDBAdapter implements DBAdapter{
     getUserIDByAccessToken(access_token: string): Promise<string> {
             const hashkey = crypto.createHash("sha512").update(access_token).digest("hex")
-            return dynamoClient.get({
+            return dynamoClient.send(new GetCommand({
                 TableName: "throwtrash-backend-accesstoken",
                 Key: {
                     access_token: hashkey
                 }
-            }).promise().then((data: AWS.DynamoDB.DocumentClient.GetItemOutput)=>{
+            })).then((data: GetCommandOutput)=>{
                 if(data.Item) {
                     const currentTime = Math.ceil(Date.now() / 1000);
                     if(data.Item.expires_in > currentTime) {
-                        return data.Item.user_id
+                        return data.Item.user_id;
                     } else {
                         console.error(`AccessToken is expired -> accesstoken=${access_token},expire=${data.Item.expires_in}`);
                     }
@@ -35,7 +39,7 @@ export class DynamoDBAdapter implements DBAdapter{
                 id: user_id
             }
         };
-        return dynamoClient.get(params).promise().then((data: AWS.DynamoDB.DocumentClient.GetItemOutput) => {
+        return dynamoClient.send(new GetCommand(params)).then((data: GetCommandOutput) => {
             if (data.Item) {
                 const checkedNextday = typeof(data.Item.nextdayflag) != "undefined" ? data.Item.nextdayflag : true;
                 return {
